@@ -2,7 +2,8 @@
 // and writes its raw output as JSON. build_db.py turns this JSON into SQLite.
 // One generator for both the preview and the database, so their numbers never differ.
 import { createRequire } from 'node:module';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 const require = createRequire(import.meta.url);
 const S = require('./generator/sim.js');
 
@@ -25,5 +26,6 @@ const raw = {
   notes: [...D.notes.entries()],
   story: S.STORY // answer key: goes to tests only, never into the agent database
 };
+mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, JSON.stringify(raw));
 console.log('wrote', out);
