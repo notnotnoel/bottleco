@@ -1,0 +1,74 @@
+[
+ {
+  "id": 1,
+  "line_id": "L1",
+  "minute": 3132,
+  "ts": "2026-09-03 10:12",
+  "name": "Filler jam burst",
+  "cause": "startup_after_cip",
+  "text": "Four filler jams in 45 minutes, soon after a clean."
+ },
+ {
+  "id": 2,
+  "line_id": "L2",
+  "minute": 6260,
+  "ts": "2026-09-05 14:20",
+  "name": "Rejects after changeover",
+  "cause": "after_changeover",
+  "text": "Many bad labels after a product change."
+ },
+ {
+  "id": 3,
+  "line_id": "L1",
+  "minute": 8310,
+  "ts": "2026-09-07 00:30",
+  "name": "Capper drift",
+  "cause": "capper_drift",
+  "text": "Cap torque slid down for two hours. Rejects rose."
+ },
+ {
+  "id": 4,
+  "line_id": "L2",
+  "minute": 11042,
+  "ts": "2026-09-08 22:02",
+  "name": "Tiny stops after shift change",
+  "cause": "shift_handover",
+  "text": "Many 1-2 minute slowdowns just after the 22:00 handover."
+ },
+ {
+  "id": 5,
+  "line_id": "L2",
+  "minute": 12070,
+  "ts": "2026-09-09 15:10",
+  "name": "Slow running",
+  "cause": "setpoint_lowered",
+  "text": "The line ran at 70% of ideal speed for 3.5 hours."
+ },
+ {
+  "id": 6,
+  "line_id": "L1",
+  "minute": 12900,
+  "ts": "2026-09-10 05:00",
+  "name": "Preform shortage",
+  "cause": "late_supply",
+  "text": "A preform delivery came very late. The line ran dry."
+ },
+ {
+  "id": 7,
+  "line_id": "L1",
+  "minute": 14830,
+  "ts": "2026-09-11 13:10",
+  "name": "Both lines stop together",
+  "cause": "plant_wide",
+  "text": "Both lines stopped for over 20 minutes at the same time."
+ },
+ {
+  "id": 8,
+  "line_id": "L2",
+  "minute": 17060,
+  "ts": "2026-09-13 02:20",
+  "name": "Unexplained dip",
+  "cause": null,
+  "text": "Score dipped for 80 minutes. No clear cause in the data."
+ }
+]

@@ -1,0 +1,56 @@
+# BottleCo
+
+Two AI agents for a bottling plant (sample data, Bottle Co):
+
+- **Line Watcher** – watches 5 live KPIs on 2 filling lines. It warns when a limit breaks and writes an RCA.
+- **Data Explorer** – answers questions in a chat, only from data, and shows the rows it used.
+
+Code does every number. The language model only writes the words. The agents read the data only up to the time on the time bar.
+
+## Status
+
+| Phase | What | State |
+|---|---|---|
+| 1 | Check the basics (one model call, key, budget) | Waits for the API key |
+| 2 | Build the data (one SQLite file) | **Done** – tests pass |
+| 3 | Data Kit, 5 KPIs, alert engine | **Done** – tests pass |
+| 4 | Line Watcher (LangGraph, RCA, number check) | Next |
+| 5 | Data Explorer (LangGraph, 3 look-around lenses) | – |
+| 6 | App (React + Vite, from the approved preview) | – |
+| 7 | Polish and QA | – |
+| 8 | Publish (noel.sg/opsagent/bottleco) | – |
+
+## Folders
+
+```
+data/       generator (same engine as the preview), export and SQLite build
+backend/    Python: Data Kit, KPIs, alert engine, tests (agents come in phases 4-5)
+preview/    the approved clickable preview (source); the React app copies its look
+docs/       plan notes
+```
+
+## Run it
+
+Needs Python 3.11+ and Node 20+.
+
+```bash
+# 1. Build the data (about 5 seconds)
+cd data
+node export.mjs build/raw.json
+python3 build_db.py           # writes data/bottleco.sqlite and the test answer key
+node oracle.mjs               # writes the preview numbers the tests compare with
+
+# 2. Run the tests
+cd ../backend
+pip install -e ".[test]"
+pytest -q
+```
+
+## What the tests prove
+
+- **Data:** every minute is there; totals in SQLite equal the generator totals; every stopped minute belongs to one stop event; the 10 Sep Line 1 overall score is 51.8% by plain SQL.
+- **Same numbers as the preview:** Python KPIs equal the preview's KPIs (28,800 values), and alerts are equal for 3 slider sets.
+- **Story events:** at default sliders, each of the 8 story events raises its expected alert, and no other alert raises.
+- **No future peek:** every tool gives the same answer when all data after "now" is replaced with junk.
+- **Read-only:** a write to the database fails.
+- **Answer key is hidden:** the story events are only in `backend/tests/fixtures`, never in the agent database.
