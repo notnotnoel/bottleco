@@ -33,7 +33,7 @@ def scan(store, S, upto=None):
                         n += 1
                         if not fired and n >= need and t >= last + S['cool']:
                             fired, last = True, t
-                            cur = {'line_id': line_id, 'key': key, 't0': t0, 'ta': t, 't_end': t, 'value': v}
+                            cur = {'line_id': line_id, 'line': store.ids.index(line_id), 'key': key, 't0': t0, 'ta': t, 't_end': t, 'value': v}
                             alerts.append(cur)
                     elif t0 >= 0:
                         if fired:
@@ -53,7 +53,7 @@ def scan(store, S, upto=None):
             o['end'] = max(o['end'], a['t_end'])
             o['t0'] = min(o['t0'], a['t0'])
         else:
-            incidents.append({'line_id': a['line_id'], 'alerts': [a], 'start': a['ta'], 't0': a['t0'], 'end': a['t_end']})
+            incidents.append({'line_id': a['line_id'], 'line': a['line'], 'alerts': [a], 'start': a['ta'], 't0': a['t0'], 'end': a['t_end']})
     incidents.sort(key=lambda x: x['start'])
     for i, x in enumerate(incidents):
         x['id'] = i + 1

@@ -1,9 +1,9 @@
 [project]
 name = "bottleco"
-version = "0.3.0"
-description = "BottleCo agents: Data Kit, KPIs and alert engine (agents follow in phases 4-5)"
+version = "0.4.0"
+description = "BottleCo agents: Data Kit, KPIs, alert engine, Line Watcher"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["langgraph>=1.2", "langchain-anthropic>=1.7"]
 
 [project.optional-dependencies]
 test = ["pytest>=8"]

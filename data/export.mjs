@@ -9,7 +9,7 @@ const S = require('./generator/sim.js');
 
 const out = process.argv[2] || 'build/raw.json';
 const D = S.build(S.SEED);
-const arr = a => Array.from(a, x => (typeof x === 'number' && !Number.isInteger(x) ? Math.round(x * 1e6) / 1e6 : x));
+const arr = a => Array.from(a); // exact values (Float32 readings stay bit-exact as doubles)
 
 const raw = {
   seed: S.SEED, days: S.DAYS, minutes: S.N,

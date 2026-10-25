@@ -11,11 +11,11 @@ Code does every number. The language model only writes the words. The agents rea
 
 | Phase | What | State |
 |---|---|---|
-| 1 | Check the basics (one model call, key, budget) | Waits for the API key |
+| 1 | Check the basics (one model call, key, budget) | **Done** – 6 models tested |
 | 2 | Build the data (one SQLite file) | **Done** – tests pass |
 | 3 | Data Kit, 5 KPIs, alert engine | **Done** – tests pass |
-| 4 | Line Watcher (LangGraph, RCA, number check) | Next |
-| 5 | Data Explorer (LangGraph, 3 look-around lenses) | – |
+| 4 | Line Watcher (LangGraph, RCA, number check) | **Done** – tests pass |
+| 5 | Data Explorer (LangGraph, 3 look-around lenses) | Next |
 | 6 | App (React + Vite, from the approved preview) | – |
 | 7 | Polish and QA | – |
 | 8 | Publish (noel.sg/opsagent/bottleco) | – |
@@ -24,7 +24,7 @@ Code does every number. The language model only writes the words. The agents rea
 
 ```
 data/       generator (same engine as the preview), export and SQLite build
-backend/    Python: Data Kit, KPIs, alert engine, tests (agents come in phases 4-5)
+backend/    Python: Data Kit, KPIs, alert engine, Line Watcher, tests
 preview/    the approved clickable preview (source); the React app copies its look
 docs/       plan notes
 ```
@@ -54,3 +54,11 @@ pytest -q
 - **No future peek:** every tool gives the same answer when all data after "now" is replaced with junk.
 - **Read-only:** a write to the database fails.
 - **Answer key is hidden:** the story events are only in `backend/tests/fixtures`, never in the agent database.
+- **Line Watcher = preview:** 168 reports (3 slider sets) equal the preview word for word: causes, checks, data analysis, triangulation.
+- **Causes at alert time:** with data only up to the alert minute, the top cause is the known cause for the 7 story events that have one; event 8 says "not clear".
+- **Number check:** every number is computed twice and must agree. When Claude re-words a report, it may not add, drop or change a number (else retry, then the code template is used).
+
+## Models
+
+Brain slider: Fast = Claude Haiku 5.5, Balanced = Sonnet 5.5, Deep = Opus 5.5. Wording slider 0 = code templates (no model call).
+Put the key in `.env` (`ANTHROPIC_API_KEY=...`, never committed). Live model test: `BOTTLECO_LIVE=1 pytest -q -s -k model_wording`.

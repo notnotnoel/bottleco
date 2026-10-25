@@ -73,15 +73,17 @@ def is_breach(S, key, v):
 
 
 def fmt(key, v):
+    """Display text for a KPI value (same rules as the preview)."""
+    from .fmt import jround, fixed
     if v is None:
         return '–'
     if key == 'cover':
         if v >= 360:
             return '6 h+'
         if v >= 60:
-            return '%d h %02d min' % (v // 60, round(v % 60))
-        return '%d min' % round(v)
+            return '%d h %s min' % (int(v // 60), str(jround(v % 60)).rjust(2, '0'))
+        return '%d min' % jround(v)
     if key == 'rej':
-        return '%.1f%%' % (v * 100)
+        return fixed(v * 100, 1) + '%'
     _, _, _, _, _, scale, unit = SPEC[key]
-    return '%d%s' % (round(v * scale), unit)
+    return '%d%s' % (jround(v * scale), unit)
