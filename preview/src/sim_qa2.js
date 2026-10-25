@@ -83,7 +83,7 @@ function answer(D, S, text, now, hist) {
     try {
       if (/\bwhy\b|what caused|root cause|\bcause of\b|explain|how come|reason for the|reason behind/.test(q)) ans = ansWhy(D, S, P, now);
       else if (/what happened|what went on|what.s going on|what is going on|anything (odd|unusual)|\bevents?\b/.test(q)) ans = ansHappened(D, S, P, now);
-      else if (/\bshifts?\b/.test(q)) ans = ansShifts(D, S, P, now);
+      else if (/\bshifts\b|\bby shift\b|\beach shift\b|\bcompare\b.*\bshift\b/.test(q)) ans = ansShifts(D, S, P, now); // 'this shift' is a time, not a shift comparison
       else if (/\b(reason|reasons|type|types|kind|kinds|defect|defects|fault|faults)\b/.test(q) && /\b(most|top|biggest|largest|worst|main|highest|cost|which|what)\b/.test(q) && P.measure !== 'oee' && P.measure !== 'speed') ans = ansTop(D, S, P, now);
       else if (P.measure || P.range || P.at != null) ans = ansValue(D, S, P, now);
       else ans = mkAbstain('I cannot answer this from the data. Ask about overall score, stopped time, speed, rejects, bottles made or preforms left, for Line 1 or Line 2.', now);

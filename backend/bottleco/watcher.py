@@ -13,11 +13,12 @@ from typing import Any, TypedDict
 
 from langgraph.graph import END, StateGraph
 
-from . import llm, numcheck
+from . import llm
 from .alerts import scan
 from .rca import Engine
 from .report import analysis_for, fill_text, report_for, triangulate
 from .settings import defaults
+from .wording import reword
 
 
 class WatchState(TypedDict, total=False):
@@ -28,23 +29,6 @@ class WatchState(TypedDict, total=False):
     reports: list
     held: list
     usage: dict
-
-
-SYSTEM = """You re-word a short factory alert report for a plant supervisor.
-Rules:
-- Keep every number, time, percentage and order number exactly as written. Do not add any number. Do not drop any number.
-- Write numbers as digits, never as words.
-- Do not add facts, causes or advice that are not in the text.
-- Plain, calm English. Short sentences. No headings, no lists, no markdown.
-- Return only the re-worded text."""
-
-
-def _variety(w):
-    if w <= 30:
-        return 'Change the wording only a little.'
-    if w <= 70:
-        return 'Use your own words, same meaning.'
-    return 'Use fresh wording and a natural tone, same meaning.'
 
 
 def _sections(rep):
@@ -87,28 +71,14 @@ def build(store, settings=None, engine=None):
         return {'reports': ok, 'held': held}
 
     def write(state: WatchState) -> WatchState:
-        w = S['wording']
         for rep in state['reports']:
             secs = _sections(rep)
             rep['text'] = dict(secs)
-            rep['wording'] = {'mode': 'template', 'tries': 0, 'model': None}
-            if w <= 0:
-                continue
-            model = llm.chat(S)
             source = '\n'.join(secs[k] for k in ('lead', 'cause', 'evidence'))
-            tries, last_problems = 0, []
-            while tries <= int(S['retries']):
-                tries += 1
-                msgs = [('system', SYSTEM), ('human', _variety(w) + ' Keep it under ' + str(int(S['length'] // 4)) + ' words.\n\n' + source +
-                                                      ('\n\nYour last try failed the number check: ' + '; '.join(last_problems) if last_problems else ''))]
-                text = llm.timed_invoke(model, msgs, meter).strip()
-                ok, last_problems = numcheck.check(source, text)
-                if ok:
-                    rep['text'] = {'body': text, 'next': secs['next']}
-                    rep['wording'] = {'mode': 'model', 'tries': tries, 'model': model.model}
-                    break
-            else:
-                rep['wording'] = {'mode': 'template', 'tries': tries, 'model': model.model, 'fallback': last_problems}
+            text, info = reword(source, S, meter)
+            if info['mode'] == 'model':
+                rep['text'] = {'body': text, 'next': secs['next']}
+            rep['wording'] = info
         return {'reports': state['reports'], 'usage': meter.as_dict()}
 
     def publish(state: WatchState) -> WatchState:

@@ -83,7 +83,7 @@ class Store:
         ix = {k: i for i, k in enumerate(self.ids)}
         self.evL = [[], []]
         for e in self.events:
-            self.evL[ix[e['line_id']]].append({'start': e['start_minute'], 'end': e['end_minute'], 'minutes': e['minutes'],
+            self.evL[ix[e['line_id']]].append({'id': e['event_id'], 'start': e['start_minute'], 'end': e['end_minute'], 'minutes': e['minutes'],
                                                'planned': bool(e['planned']), 'reason': e['reason'], 'comment': e['operator_comment']})
         self.cipL = [[e for e in a if e['reason'] == 'CIP clean'] for a in self.evL]
         self.chgL = [[e for e in a if e['reason'] == 'Changeover'] for a in self.evL]

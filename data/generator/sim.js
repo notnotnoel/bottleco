@@ -681,7 +681,7 @@ function parseQ(raw, now, S, hist) {
   // time
   const MON = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
   let day = null, mon = null;
-  for (const m of q.matchAll(/\b(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:of\s*)?([a-z]{3,9})\b|\b([a-z]{3,9})\s*(\d{1,2})\b/g)) {
+  for (const m of q.matchAll(/\b(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:of\s*)?((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]{0,6})\b|\b((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]{0,6})\s*(\d{1,2})\b/g)) { // month names only, so 'about 6 Sep' still finds 6 Sep
     const d = m[1] ? +m[1] : +m[4], mm = (m[2] || m[3] || '').slice(0, 3);
     if (MON.includes(mm)) { day = d; mon = mm; break; }
   }
@@ -886,7 +886,7 @@ function answer(D, S, text, now, hist) {
     try {
       if (/\bwhy\b|what caused|root cause|\bcause of\b|explain|how come|reason for the|reason behind/.test(q)) ans = ansWhy(D, S, P, now);
       else if (/what happened|what went on|what.s going on|what is going on|anything (odd|unusual)|\bevents?\b/.test(q)) ans = ansHappened(D, S, P, now);
-      else if (/\bshifts?\b/.test(q)) ans = ansShifts(D, S, P, now);
+      else if (/\bshifts\b|\bby shift\b|\beach shift\b|\bcompare\b.*\bshift\b/.test(q)) ans = ansShifts(D, S, P, now); // 'this shift' is a time, not a shift comparison
       else if (/\b(reason|reasons|type|types|kind|kinds|defect|defects|fault|faults)\b/.test(q) && /\b(most|top|biggest|largest|worst|main|highest|cost|which|what)\b/.test(q) && P.measure !== 'oee' && P.measure !== 'speed') ans = ansTop(D, S, P, now);
       else if (P.measure || P.range || P.at != null) ans = ansValue(D, S, P, now);
       else ans = mkAbstain('I cannot answer this from the data. Ask about overall score, stopped time, speed, rejects, bottles made or preforms left, for Line 1 or Line 2.', now);

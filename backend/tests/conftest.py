@@ -38,3 +38,11 @@ def raw():
     if not os.path.exists(p):
         pytest.skip('data/build/raw.json missing (run: node data/export.mjs)')
     return json.load(open(p))
+
+
+@pytest.fixture(scope='session')
+def sql():
+    import sqlite3
+    c = sqlite3.connect('file:' + DB + '?mode=ro', uri=True)
+    yield c
+    c.close()

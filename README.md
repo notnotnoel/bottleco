@@ -15,8 +15,8 @@ Code does every number. The language model only writes the words. The agents rea
 | 2 | Build the data (one SQLite file) | **Done** – tests pass |
 | 3 | Data Kit, 5 KPIs, alert engine | **Done** – tests pass |
 | 4 | Line Watcher (LangGraph, RCA, number check) | **Done** – tests pass |
-| 5 | Data Explorer (LangGraph, 3 look-around lenses) | Next |
-| 6 | App (React + Vite, from the approved preview) | – |
+| 5 | Data Explorer (LangGraph, 3 look-around lenses) | **Done** – tests pass |
+| 6 | App (React + Vite, from the approved preview) | Next |
 | 7 | Polish and QA | – |
 | 8 | Publish (noel.sg/opsagent/bottleco) | – |
 
@@ -24,7 +24,7 @@ Code does every number. The language model only writes the words. The agents rea
 
 ```
 data/       generator (same engine as the preview), export and SQLite build
-backend/    Python: Data Kit, KPIs, alert engine, Line Watcher, tests
+backend/    Python: Data Kit, KPIs, alert engine, Line Watcher, Data Explorer, tests
 preview/    the approved clickable preview (source); the React app copies its look
 docs/       plan notes
 ```
@@ -57,6 +57,11 @@ pytest -q
 - **Line Watcher = preview:** 168 reports (3 slider sets) equal the preview word for word: causes, checks, data analysis, triangulation.
 - **Causes at alert time:** with data only up to the alert minute, the top cause is the known cause for the 7 story events that have one; event 8 says "not clear".
 - **Number check:** every number is computed twice and must agree. When Claude re-words a report, it may not add, drop or change a number (else retry, then the code template is used).
+
+- **Data Explorer = preview:** 52 questions x 2 slider sets equal the preview word for word.
+- **Golden questions (30):** every number equals an independent plain-SQL result; every "why" names the known cause.
+- **Trick questions (10):** forecasts, money, energy, people, opinions, Line 3, dates outside the data, dates after "now": all get "not in the data".
+- **Claude as planner (live):** Haiku 5.5 and Sonnet 5.5 each passed all 40 (cost for 40 questions: US$0.008 and US$0.16).
 
 ## Models
 

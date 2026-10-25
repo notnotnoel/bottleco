@@ -27,7 +27,7 @@ function parseQ(raw, now, S, hist) {
   // time
   const MON = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
   let day = null, mon = null;
-  for (const m of q.matchAll(/\b(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:of\s*)?([a-z]{3,9})\b|\b([a-z]{3,9})\s*(\d{1,2})\b/g)) {
+  for (const m of q.matchAll(/\b(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:of\s*)?((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]{0,6})\b|\b((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]{0,6})\s*(\d{1,2})\b/g)) { // month names only, so 'about 6 Sep' still finds 6 Sep
     const d = m[1] ? +m[1] : +m[4], mm = (m[2] || m[3] || '').slice(0, 3);
     if (MON.includes(mm)) { day = d; mon = mm; break; }
   }
