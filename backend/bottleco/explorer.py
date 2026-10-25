@@ -123,7 +123,7 @@ def plan_to_P(ex, plan, raw, now):
     return ex.finish_plan(P, now, None)   # the model already used the chat; code still checks "after now"
 
 
-def build(eng, settings=None):
+def build(eng, settings=None, use_model=True):
     S = dict(defaults(), **(settings or {}))
     ex = Explorer(eng)
     ex.S = S
@@ -131,7 +131,7 @@ def build(eng, settings=None):
 
     def plan(state: ExploreState) -> ExploreState:
         q, now = state['question'], state['now']
-        if not llm.api_key() or not q.strip():
+        if not use_model or not llm.api_key() or not q.strip():
             return {'planner': 'rules'}
         chat = (state.get('chat') or [])[-int(S['memory']):]
         recent = '\n'.join('- Earlier question: "%s" -> read as: %s' % (c['q'], {k: c['parsed'].get(k) for k in ('lines', 'measure', 'label')}) for c in chat) or '(none)'
@@ -190,8 +190,8 @@ def build(eng, settings=None):
     return g.compile()
 
 
-def ask(eng, question, now, chat=None, settings=None):
-    return build(eng, settings).invoke({'question': question, 'now': now, 'chat': chat or []})
+def ask(eng, question, now, chat=None, settings=None, use_model=True):
+    return build(eng, settings, use_model).invoke({'question': question, 'now': now, 'chat': chat or []})
 
 
 __all__ = ['ask', 'build', 'Plan', 'plan_to_P', 'fill_text']

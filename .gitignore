@@ -5,3 +5,5 @@ __pycache__/
 preview/dist/
 node_modules/
 .env
+frontend/dist/
+frontend/node_modules/

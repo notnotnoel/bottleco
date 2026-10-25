@@ -16,15 +16,16 @@ Code does every number. The language model only writes the words. The agents rea
 | 3 | Data Kit, 5 KPIs, alert engine | **Done** – tests pass |
 | 4 | Line Watcher (LangGraph, RCA, number check) | **Done** – tests pass |
 | 5 | Data Explorer (LangGraph, 3 look-around lenses) | **Done** – tests pass |
-| 6 | App (React + Vite, from the approved preview) | Next |
-| 7 | Polish and QA | – |
+| 6 | App (React + Vite + FastAPI, from the approved preview) | **Done** – tests pass |
+| 7 | Polish and QA | Desktop, phone, dark and light checked |
 | 8 | Publish (noel.sg/opsagent/bottleco) | – |
 
 ## Folders
 
 ```
 data/       generator (same engine as the preview), export and SQLite build
-backend/    Python: Data Kit, KPIs, alert engine, Line Watcher, Data Explorer, tests
+backend/    Python: Data Kit, KPIs, alert engine, Line Watcher, Data Explorer, API, tests
+frontend/   React + Vite app (the approved preview's look, data from the API)
 preview/    the approved clickable preview (source); the React app copies its look
 docs/       plan notes
 ```
@@ -45,6 +46,26 @@ cd ../backend
 pip install -e ".[test]"
 pytest -q
 ```
+
+## Run the app
+
+```bash
+cd frontend && npm ci && npx vite build          # builds frontend/dist
+cd ../backend && pip install -e ".[test]"
+uvicorn bottleco.api:app --port 8000             # open http://localhost:8000
+```
+
+For live development run `npx vite` in `frontend/` (it sends `/api` to port 8000).
+One container for hosting: `docker build -t bottleco .` (see `Dockerfile`).
+
+Settings for hosting (environment variables):
+
+| Variable | Meaning | Default |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Claude key. Without it the app runs with no model (rule reader, code wording). | – |
+| `BOTTLECO_DAILY_USD` | Daily spend cap. When reached, the app keeps working without the model. | 2.0 |
+| `BOTTLECO_ASK_LIMIT` | Questions per visitor per 10 minutes. | 30 |
+| `BOTTLECO_ORIGINS` | Allowed page origins if the page is hosted apart, e.g. `https://noel.sg`. | – |
 
 ## What the tests prove
 

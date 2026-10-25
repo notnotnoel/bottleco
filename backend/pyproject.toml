@@ -1,9 +1,9 @@
 [project]
 name = "bottleco"
-version = "0.5.0"
-description = "BottleCo agents: Data Kit, KPIs, alert engine, Line Watcher, Data Explorer"
+version = "0.6.0"
+description = "BottleCo agents: Data Kit, KPIs, alert engine, Line Watcher, Data Explorer, API"
 requires-python = ">=3.11"
-dependencies = ["langgraph>=1.2", "langchain-anthropic>=1.7"]
+dependencies = ["langgraph>=1.2", "langchain-anthropic>=1.7", "fastapi>=0.115", "uvicorn>=0.30"]
 
 [project.optional-dependencies]
 test = ["pytest>=8"]
@@ -17,3 +17,6 @@ packages = ["bottleco"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+bottleco = ["*.json"]
