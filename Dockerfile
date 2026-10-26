@@ -17,4 +17,5 @@ COPY data/bottleco.sqlite data/bottleco.sqlite
 COPY --from=web /web/dist frontend/dist
 ENV BOTTLECO_DB=/app/data/bottleco.sqlite BOTTLECO_WEB=/app/frontend/dist BOTTLECO_DAILY_USD=1.0 BOTTLECO_ASK_LIMIT=30
 EXPOSE 8000
-CMD ["uvicorn", "bottleco.api:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "/app/backend"]
+# Cloud Run sets PORT (8080); elsewhere 8000.
+CMD ["sh", "-c", "uvicorn bottleco.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
