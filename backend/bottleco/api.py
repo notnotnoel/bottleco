@@ -67,6 +67,13 @@ SPEND = Spend()
 _hits = defaultdict(deque)
 
 
+def visitor(request):
+    """The visitor's address. Behind Cloudflare and Cloud Run the direct peer is a proxy, so use their headers."""
+    h = request.headers
+    ip = h.get('cf-connecting-ip') or (h.get('x-forwarded-for') or '').split(',')[0].strip()
+    return ip or (request.client.host if request.client else 'x')
+
+
 def rate_ok(ip):
     q, now = _hits[ip], time.time()
     while q and q[0] < now - 600:
@@ -266,7 +273,7 @@ def _ask_settings(c, ip):
 
 
 def _run_ask(body, request):
-    ip = request.client.host if request.client else 'x'
+    ip = visitor(request)
     if not rate_ok(ip):
         raise HTTPException(429, 'Too many questions. Wait a few minutes.')
     c, now = ctx_for(body.settings), clamp_now(body.now)
@@ -291,7 +298,7 @@ STEP_TEXT = {'plan': 'Reading your question…', 'check': 'Checking the plan aga
 
 @app.post('/api/ask/stream')
 def ask_stream(body: AskBody, request: Request):
-    ip = request.client.host if request.client else 'x'
+    ip = visitor(request)
     if not rate_ok(ip):
         return JSONResponse({'detail': 'Too many questions. Wait a few minutes.'}, status_code=429)
     c, now = ctx_for(body.settings), clamp_now(body.now)
