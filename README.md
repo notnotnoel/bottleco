@@ -18,7 +18,7 @@ Code does every number. The language model only writes the words. The agents rea
 | 5 | Data Explorer (LangGraph, 3 look-around lenses) | **Done** – tests pass |
 | 6 | App (React + Vite + FastAPI, from the approved preview) | **Done** – tests pass |
 | 7 | Polish and QA | Desktop, phone, dark and light checked |
-| 8 | Publish (noel.sg/opsagent/bottleco) | – |
+| 8 | Publish (noelpaliath.com/opsagent/bottleco) | – |
 
 ## Folders
 
@@ -65,7 +65,7 @@ Settings for hosting (environment variables):
 | `ANTHROPIC_API_KEY` | Claude key. Without it the app runs with no model (rule reader, code wording). | – |
 | `BOTTLECO_DAILY_USD` | Daily spend cap. When reached, the app keeps working without the model. | 2.0 |
 | `BOTTLECO_ASK_LIMIT` | Questions per visitor per 10 minutes. | 30 |
-| `BOTTLECO_ORIGINS` | Allowed page origins if the page is hosted apart, e.g. `https://noel.sg`. | – |
+| `BOTTLECO_ORIGINS` | Allowed page origins if the page is hosted apart, e.g. `https://noelpaliath.com`. | – |
 
 ## What the tests prove
 
