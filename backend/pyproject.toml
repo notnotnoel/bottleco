@@ -1,6 +1,6 @@
 [project]
 name = "bottleco"
-version = "0.7.0"
+version = "0.7.1"
 description = "BottleCo agents: Data Kit, KPIs, alert engine, Line Watcher, Data Explorer, API"
 requires-python = ">=3.11"
 dependencies = ["langgraph>=1.2", "langchain-anthropic>=1.7", "fastapi>=0.115", "uvicorn>=0.30"]

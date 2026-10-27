@@ -9,6 +9,7 @@ import re
 
 from . import kpis
 from .aggregate import Aggregator, rule_agg, wants_aggregate
+from .incidents import Incidents, wants_incident
 from .db import ts as iso_ts, ws
 from .fmt import START, dlabel, fixed, full, hhmm, jround, jstr, num, pct
 from .rca import HYP
@@ -22,6 +23,8 @@ PLANT_RX = (r'\b(lines?|l[12]|oee|score|efficien\w*|stops?|stopped|stoppages?|do
             r'quality|speed|slow\w*|pace|output|produc\w*|bottles?|volume|preforms?|stock|cover|material|shifts?|changeovers?|cip|clean\w*|'
             r'deliver\w*|late|capper|cap|torque|filler|labell?er|labels?|conveyor|setpoint|plant|machines?|events?|happen\w*|running|ran|'
             r'alerts?|warnings?|kpis?|minutes?|hours?|yesterday|today|week|underfill|particle|damaged|misfeed|blockage|micro)\b')
+KNOWN_NOUN_RX = (r'\b(lines?|l[12]|days?|dates?|hours?|times?|shifts?|stops?|stoppages?|reasons?|faults?|defects?|types?|kinds?|incidents?|events?|'
+                 r'warnings?|alerts?|rcas?|problems?|issues?|outages?|breakdowns?|deliver\w*|is|was|were|had|has|of|one|machines?)\b')
 OFF_TOPIC = 'That is not about Line 1 or Line 2, so it is not in the data. Ask about overall score, stops, speed, rejects, bottles made or preforms.'
 MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
@@ -83,7 +86,7 @@ class Explorer:
             return P
         miss = re.search(r'\b(costs? (of|per)|how much did .* cost|price|pricing|profit|revenue|money|dollars?|sgd|usd|energy|kwh|electric\w*|water use|power use|temperature|headcount|employees?|salary|customers?|sales|weather|co2|emissions?|supplier name|operator name|who)\b', q)
         if miss:
-            P['abstain'] = {'why': 'missing', 'text': '"' + miss.group(1) + '" is not in the data.'}
+            P['abstain'] = {'why': 'missing', 'text': 'I do not know who: the data has no names of people.' if miss.group(1) == 'who' else '"' + miss.group(1) + '" is not in the data.'}
             return P
         if re.search(r'\b(should|opinion|do you think|feel|blame|recommend)\b', q):
             P['abstain'] = {'why': 'opinion', 'text': 'That is a judgment, not a fact in the data. I can show the numbers behind it.'}
@@ -205,6 +208,8 @@ class Explorer:
         q = P['q']
         if re.search(r'\bwhy\b|what caused|root cause|\bcause of\b|explain|how come|reason for the|reason behind', q):
             return 'why'
+        if wants_incident(q):
+            return 'incident'
         if re.search(r"what happened|what went on|what.s going on|what is going on|anything (odd|unusual)|\bevents?\b", q):
             return 'happened'
         if re.search(r'\bshifts\b|\bby shift\b|\beach shift\b|\bcompare\b.*\bshift\b', q):  # 'this shift' is a time
@@ -691,7 +696,36 @@ class Explorer:
         return r
 
     # ------------------------------------------------------------ dispatcher
+    SUPER_RX = r'\b(highest|lowest|maximum|minimum|max|min|peak|best|worst|biggest|smallest|largest|most|least|fewest)\b'
+
+    def direct(self, P, intent):
+        """Make sure the answer type fits the question asked (both planners). Returns the intent to use."""
+        q = P['q']
+        m = re.search(r'^\s*(?:which|who)\s+(\w+)', q) or (re.search(r'^\s*who\b', q) and re.match(r'(\s*)(who)', q))
+        if m and intent in ('value', 'aggregate', 'top') and not re.search(KNOWN_NOUN_RX, m.group(0)):
+            P['unknown'] = m.group(2) if m.group(0).strip() == 'who' else m.group(1)
+            return 'value'   # say "I do not know", then show the closest plain totals
+        if re.search(r'\b(machines?|equipment)\b', q) and intent in ('none', 'value', 'aggregate') and not re.search(r'\b(why|when)\b', q):
+            P['measure'], P['machine'] = 'stop', True
+            return 'top'     # machines are logged by stop reason (Filler jam = filler, Capper fault = capper ...)
+        wm = re.search(r'\b(?:which|what)\s+(line|day|hour|shift)\b', q)
+        if wm and intent in ('value', 'aggregate') and re.search(self.SUPER_RX + r'|\b(more|less|better|worse)\b', q):
+            P['by'] = wm.group(1)          # "which line had the most stops": pick the line, not one total
+            if P.get('agg') not in ('min', 'max'):
+                P['agg'] = None            # read highest / lowest from the words
+            return 'aggregate'
+        if intent not in (None, 'why') and wants_incident(q):
+            return 'incident'
+        if intent == 'value' and re.search(self.SUPER_RX, q) and P.get('measure') != 'cover':
+            return 'aggregate'      # "highest speed", "lowest score": pick the hour or day, not one total
+        return intent
+
+    def ans_incident(self, P, now):
+        return Incidents(self).run(P, now)
+
     def answer_plan(self, P, intent, now, question):
+        if not P.get('abstain'):
+            intent = self.direct(P, intent)
         if P.get('abstain'):
             ans = self.abstain(P['abstain']['text'], now)
         elif intent == 'why':
@@ -706,6 +740,8 @@ class Explorer:
             ans = self.ans_value(P, now)
         elif intent == 'aggregate':
             ans = self.ans_aggregate(P, now)
+        elif intent == 'incident':
+            ans = self.ans_incident(P, now)
         else:
             ans = self.abstain('I cannot answer this from the data. Ask about overall score, stopped time, speed, rejects, bottles made or preforms left, for Line 1 or Line 2.', now)
         if ans['kind'] == 'answer':
@@ -713,11 +749,19 @@ class Explorer:
             if bad:
                 ans = dict(self.abstain('I cannot confirm this. ' + str(len(bad)) + ' number' + ('s' if len(bad) > 1 else '') + ' did not pass the check, so I do not show the answer.', now), failed=bad)
             else:
+                if P.get('machine') and not ans.get('lead'):
+                    ans['lead'] = 'The data logs machines by stop reason (Filler jam = filler, Labeler misfeed = labeler, Capper fault = capper, Conveyor blockage = conveyor). The top stop reason answers which machine stopped most.'
+                if P.get('unknown') and not ans.get('lead'):
+                    ans['lead'] = ('I do not know ' + ('who' if P['unknown'] == 'who' else 'which ' + P['unknown']) +
+                                   ': the data has no names of people, machines by number or products. The closest facts I have are below.')
                 ans['shown'] = fill_text(ans['text'], ans['facts'])
+                if ans.get('lead'):
+                    ans['lead_shown'] = fill_text(ans['lead'], ans['facts'])
                 ans['check'] = {'total': len(ans['facts']), 'ok': len(ans['facts'])}
         ans['question'] = question
         ans['parsed'] = {'lines': P.get('lines'), 'measure': P.get('measure'), 'range': P.get('range'), 'label': P.get('label'), 'day': P.get('day'), 'at': P.get('at'),
                          'explicitLine': P.get('explicitLine')}
+        ans['parsed']['intent'] = intent
         if intent == 'aggregate' and P.get('agg'):
             ans['parsed'].update({k: P.get(k) for k in ('agg', 'metric', 'by', 'cond')})
         return ans

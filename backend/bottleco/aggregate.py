@@ -82,7 +82,8 @@ def rule_agg(P):
     if re.search(r'\bdeliver', q):
         metric = 'late_minutes' if re.search(r'\blate|delay', q) else 'deliveries'
     elif meas == 'stop' or re.search(r'\bstops?\b|\bbreakdowns?\b|\bfaults?\b', q):
-        metric = 'stop_events' if re.search(r'how many (stops|times|faults|breakdowns|stop events)|number of (stops|faults|times)|count of stops|stops count|\bcount\b', q) else 'stop_minutes'
+        metric = 'stop_events' if re.search(r'how many (stops|times|faults|breakdowns|stop events)|number of (stops|faults|times)|count of stops|stops count|\bcount\b|'
+                                            r'\b(most|fewest|least|more|less) (stops|faults|breakdowns)\b', q) else 'stop_minutes'
     elif meas == 'rej':
         metric = 'reject_rate' if re.search(r'\brate\b|%|percent|share', q) or cond else 'rejects'
     elif meas in ('oee', 'speed', 'output'):
@@ -112,7 +113,8 @@ def rule_agg(P):
     else:
         agg = 'sum'
     if agg in ('max', 'min') and by == 'none':
-        by = 'day'
+        r = P.get('range')
+        by = 'hour' if r and r[1] - r[0] < 1440 else 'day'
     return {'agg': agg, 'metric': metric, 'by': by, 'cond': cond}
 
 
@@ -287,7 +289,7 @@ class Aggregator:
             fid = 'f%d' % (len(facts) + 1)
             facts.append({'id': fid, 'label': lname + ': ' + agg + ' of ' + what, 'value': 0 if ra is None else ra, 'shown': shown,
                           'check': 0 if rb is None else rb, 'ok': _same(ra, rb) and pa == pb})
-            parts.append(lname + ' {{' + fid + '}}')
+            parts.append(('' if l is None else lname + ' ') + '{{' + fid + '}}')
             if by in BY_SIZE:
                 series.append({'name': lname, 'line': l, 'pts': [[x, va] for lab, x, y, va, vb in vals]})
 
@@ -300,6 +302,13 @@ class Aggregator:
             word = {'sum': 'Total', 'avg': 'Average', 'min': 'Lowest', 'max': 'Highest'}[agg]
             head = word + ' ' + what + ('' if agg == 'sum' else per)
         label = P.get('label') or ('all data up to now (' + full(now) + ')')
+        lead = None
+        if by == 'line' and agg in ('min', 'max') and facts and facts[0]['ok']:
+            sv = sorted([(v[3], v[0]) for v in per_line[0][1] if v[3] is not None], reverse=(agg == 'max'))
+            if sv:
+                lead = sv[0][1] + ' had the ' + ('most ' if agg == 'max' else 'fewest ') + what if metric in ('stop_events', 'deliveries') else \
+                    sv[0][1] + ' had the ' + ('highest ' if agg == 'max' else 'lowest ') + what
+                lead += ': ' + '; '.join(n + ' ' + fmt_val(metric, v) for v, n in sv) + '.'
         text = head + ', ' + label + ': ' + '; '.join(parts) + '.' + (' ' + ' '.join(notes) if notes else '')
         cap = jround(self.S['rows'])
         table = {'stop_events': 'downtime_events', 'deliveries': 'deliveries', 'late_minutes': 'deliveries'}.get(metric, 'minute_readings')
@@ -314,6 +323,6 @@ class Aggregator:
                     'rows': rows[:cap], 'total': len(rows), 'cut': len(rows) > cap},
             'trend': {'series': series, 'step': BY_SIZE[by]} if series else None,
             'trendInfo': {'name': name[0].upper() + name[1:], 'unit': unit, 'note': 'One point per ' + by + '. Code and plain SQL agree on every point.'} if series else None,
-            'lens': None,
+            'lens': None, 'lead': lead,
             'agg': {'agg': agg, 'metric': metric, 'by': by, 'cond': cond, 'reason': reason},
         }

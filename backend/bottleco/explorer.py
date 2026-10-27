@@ -22,9 +22,10 @@ from .wording import reword
 
 class Plan(BaseModel):
     """How to answer the question. Fill only what the question (or the recent chat) says."""
-    intent: Literal['value', 'aggregate', 'top', 'shifts', 'why', 'happened', 'not_in_data', 'unclear'] = Field(
+    intent: Literal['value', 'aggregate', 'incident', 'top', 'shifts', 'why', 'happened', 'not_in_data', 'unclear'] = Field(
         description="value = one number or total for one period (e.g. stopped time today, bottles made on 5 Sep); aggregate = a sum, average, count, lowest or highest over many hours, shifts, days, lines or stop reasons "
-                    "(e.g. average per day, how many stops, which day was highest, how many hours below 75%); top = which stop reason or defect was biggest; "
+                    "(e.g. average per day, how many stops, which day was highest, how many hours below 75%); "
+                    "incident = which single incident, warning or stop had the biggest impact or was the longest; top = which stop reason or defect was biggest; "
                     "shifts = compare shifts A/B/C; why = explain a drop, a rise or a stop; happened = list what happened; "
                     "not_in_data = asks for something the data cannot answer; unclear = not a question about the plant or its lines")
     lines: List[int] = Field(default_factory=list, description='Line numbers named, e.g. [1] or [1, 2]. Empty if no line is named. Keep any number the user wrote, even 3.')
@@ -55,6 +56,7 @@ Rules:
 - Copy line numbers, days and times exactly as written, even if they look wrong. Code checks them.
 - If the question asks for a forecast, money, energy, people, weather or an opinion, set intent to not_in_data.
 - If the question asks for a sum, average, count, lowest or highest over many hours, shifts, days or stop reasons, set intent to aggregate and fill agg, agg_metric and group_by.
+- Answer the question that was asked. "Which incident / stop had the biggest impact" is intent incident, not a total.
 - If the question is not about the plant (general knowledge, chit-chat, jokes), set intent to unclear. Do not reuse the recent chat for it."""
 
 
@@ -213,7 +215,7 @@ def build(eng, settings=None, use_model=True):
     def write(state: ExploreState) -> ExploreState:
         ans = state['answer']
         if ans['kind'] == 'answer':
-            text, info = reword(ans['shown'], S, meter)
+            text, info = reword(((ans['lead_shown'] + ' ') if ans.get('lead_shown') else '') + ans['shown'], S, meter)
             ans['wording'] = info
             if info['mode'] == 'model':
                 ans['shown_model'] = text

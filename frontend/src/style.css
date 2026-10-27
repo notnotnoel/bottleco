@@ -655,3 +655,6 @@ body::before{content:"";position:fixed;inset:-8%;z-index:-1;pointer-events:none;
   .made{display:none}
 }
 @media (max-width:359px){.brand .bt span{display:none}}
+/* answers: direct answer first (semibold), then how I got it (secondary) */
+.bub .lead{font-weight:600;color:var(--label)}
+.bub .lead+.expl{margin-top:6px;padding-top:6px;border-top:.5px solid var(--sep);color:var(--label2);font-size:.94em}

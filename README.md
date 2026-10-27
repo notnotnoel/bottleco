@@ -88,6 +88,7 @@ Settings for hosting (environment variables):
 - **Trick questions (10):** forecasts, money, energy, people, opinions, Line 3, dates outside the data, dates after "now": all get "not in the data".
 - **Claude as planner (live):** Haiku 5.5 and Sonnet 5.5 each passed all 40 (cost for 40 questions: US$0.011 and US$0.20).
 - **Totals, averages and counts:** SUM, AVG, COUNT, MIN and MAX per hour, shift, day, line or stop reason. Each group value is computed twice (code and plain SQL) and the tests check them against separate SQL. Part days, shifts or hours are left out of averages, and the answer says so.
+- **Answer the question asked:** each answer leads with the direct answer, then how I got it, then the data. "Which incident had the highest impact?" ranks the warning incidents by bottles lost; "which stop was longest?" ranks stops; "which line / day had the most ...?" names the line or day; "which operator ...?" says "I do not know which operator". Checked against plain SQL, also when the model planner misreads the question.
 - **Off-topic questions:** a question that is not about the plant (for example "why is red a color") gets "not about Line 1 or Line 2", also in the middle of a chat and also when the model planner reads it wrongly.
 
 ## Models

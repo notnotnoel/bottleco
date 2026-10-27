@@ -39,7 +39,7 @@ def ask(ex, c):
 
 # "hello" now gets the off-topic answer (the preview gave a general "cannot answer" text).
 from bottleco.explorer_engine import OFF_TOPIC  # noqa: E402
-CHANGED = {'X09': OFF_TOPIC}
+CHANGED = {'X09': OFF_TOPIC, 'T04': 'I do not know who: the data has no names of people.'}   # T04: plainer 'do not know' text (28 Oct)
 
 
 @pytest.mark.parametrize('case', ['defaults', 'full'])

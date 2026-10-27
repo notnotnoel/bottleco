@@ -3,7 +3,7 @@
 2. KPI tiles keep one height while time moves (warnings come and go).
 3. Every sparkline has its dashed warning line.
 4. Phone: one-row time bar with a More menu; the page never scrolls sideways; the RCA sheet fits the screen.
-5. Data Explorer: an aggregate question gets an aggregate answer; an off-topic question after a real one gets "not about Line 1 or Line 2".
+5. Data Explorer: the answer leads with the direct answer, the chat snaps to its start; an aggregate question gets an aggregate answer; an off-topic question after a real one gets "not about Line 1 or Line 2".
 """
 import sys
 
@@ -49,6 +49,10 @@ with sync_playwright() as p:
     check('not about Line 1 or Line 2' in a2, 'off-topic question after a real one: ' + a2[:70])
     a3 = ask(pg, 'Which day had the highest output on Line 2?')
     check('Highest bottles made per day' in a3 or 'highest' in a3.lower(), 'aggregate answer: ' + a3[:90])
+    a4 = ask(pg, 'What incident had the highest impact on production?'); pg.wait_for_timeout(700)
+    check(a4.startswith('The incident with the highest impact was RCA'), 'direct answer first: ' + a4[:70])
+    gap = pg.evaluate("(()=>{const b=document.querySelector('.chat'), q=[...b.querySelectorAll('[data-q]')].pop(); return q.getBoundingClientRect().top-b.getBoundingClientRect().top})()")
+    check(0 <= gap <= 20, 'chat snaps to the start of the answer (gap %d px)' % gap)
 
     ph = b.new_page(viewport={'width': 390, 'height': 844}, device_scale_factor=2, has_touch=True, is_mobile=True)
     ph.goto(U); ph.wait_for_selector('.lcard', state='attached'); ph.evaluate(f'window.__bottleco.seek({T(10, 9, 0)})'); ph.wait_for_timeout(1500)

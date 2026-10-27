@@ -28,7 +28,8 @@ function Answer({ a, onAsk, onFact }) {
     {v ? <div className="bub"><FactText text={a.headline} facts={a.facts} onTap={onFact} />
       <div className={'verdict k-' + v.kind}><div className="vt"><span className="vb">{v.kind === 'cause' ? '✓' : v.kind === 'unclear' ? '?' : '–'}</span><div><b>{v.title}</b><small>{v.sub}</small></div></div>
         {v.lines.map((x, i) => <div key={i} className="chk"><b className={v.kind === 'cause' ? 'y' : 's'}>{v.kind === 'cause' ? '✓' : '·'}</b><span>{x}</span></div>)}</div></div>
-      : <div className="bub"><FactText text={a.text} facts={a.facts} onTap={onFact} /></div>}
+      : <div className="bub">{a.lead && <div className="lead"><FactText text={a.lead} facts={a.facts} onTap={onFact} /></div>}
+        <div className={a.lead ? 'expl' : ''}><FactText text={a.text} facts={a.facts} onTap={onFact} /></div></div>}
     {a.shown_model && <div className="bub" style={{ marginTop: 4 }}><div className="tag">In plain words</div>{a.shown_model}</div>}
     <Att icon="db" title="Data queried" count={a.queried.length + ' source' + (a.queried.length > 1 ? 's' : '')} open>{a.queried.map((q, i) => <div key={i} className="qrow"><code>{q.table}</code><span>{q.filter + ' · ' + fmtN(q.rows) + ' rows'}</span></div>)}</Att>
     {a.raw && <RawCard raw={a.raw} />}
@@ -43,7 +44,15 @@ function Answer({ a, onAsk, onFact }) {
 export default function Explorer({ now, S, incidents, onGear, show }) {
   const [log, setLog] = useState([]), [busy, setBusy] = useState(false), [step, setStep] = useState(''), [text, setText] = useState(''), [fact, setFact] = useState(null);
   const chat = useRef([]), box = useRef(null), nowRef = useRef(now); nowRef.current = now;
-  useEffect(() => { requestAnimationFrame(() => { if (box.current) box.current.scrollTop = box.current.scrollHeight; }); }, [log, step]);
+  // While I work: follow the bottom. When the answer arrives: snap to the start of it (the question, then the answer), not to the end.
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      const b = box.current; if (!b) return;
+      const last = log[log.length - 1], q = last && last.ans ? b.querySelector('[data-q="' + (log.length - 2) + '"]') : null;
+      if (q) b.scrollTo({ top: b.scrollTop + q.getBoundingClientRect().top - b.getBoundingClientRect().top - 6, behavior: 'smooth' });
+      else b.scrollTop = b.scrollHeight;
+    });
+  }, [log, step]);
   async function ask(q) {
     q = (q || '').trim(); if (!q || busy) return; setBusy(true); setText('');
     const at = nowRef.current;
@@ -69,7 +78,7 @@ export default function Explorer({ now, S, incidents, onGear, show }) {
       <div className="chat" ref={box} aria-live="polite">
         <div className="msg in"><div className="bub">Hi. I am the Data Explorer. I answer only from Bottle Co data, and only up to the time on the time bar. Every answer shows the data I queried, the raw rows and the trend I saw.</div>
           <div className="bub tail" style={{ marginTop: 4 }}>Press play, then ask me why something happened. Tap a blue number to see where it comes from.</div></div>
-        {log.map((m, i) => m.out ? <div key={i}><div className="ts tn">{full(m.at)}</div><div className="msg out"><div className="bub tail">{m.out}</div></div></div>
+        {log.map((m, i) => m.out ? <div key={i} data-q={i}><div className="ts tn">{full(m.at)}</div><div className="msg out"><div className="bub tail">{m.out}</div></div></div>
           : <Answer key={i} a={m.ans} onAsk={ask} onFact={setFact} />)}
         {busy && <><div className="msg in"><div className="bub tail typing" aria-label="Checking the data"><i /><i /><i /></div></div><div className="step">{step}</div></>}
       </div>
