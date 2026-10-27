@@ -8,6 +8,9 @@ import Monitor from './Monitor.jsx';
 import { NOT_USED, SHIFTS, SLIDER_FMT, api, full, hhmm, makeDays, shiftOf } from './lib.js';
 import { Ico, Modal, useToast } from './ui.jsx';
 
+// The product page on noelpaliath.com; the app itself lives one level down at /opsagent/bottleco/app/.
+const PAGE_URL = 'https://noelpaliath.com/opsagent/bottleco/';
+
 const GROUPS = {
   E: [['What I look at', ['around', 'simK', 'simCut', 'rows', 'sure', 'memory']], ['How I talk', ['wording', 'length']], ['How I think', ['brain', 'think', 'retries', 'effort']]],
   W: [['Warning levels', ['oeeLim', 'stopLim', 'speedLim', 'rejLim', 'coverLim']], ['When I warn', ['every', 'hold', 'cool']], ['What I compare', ['baseDays', 'around', 'nCauses', 'reportLen']], ['How I talk', ['wording', 'length']], ['How I think', ['brain', 'think', 'retries', 'effort']]]
@@ -105,6 +108,7 @@ export default function App() {
     <div className="app">
       <header className="top">
         <div className="brand">
+          <a className="backbtn" href={PAGE_URL} aria-label="Back to the BottleCo page"><Ico n="chevL" /><span>BottleCo page</span></a>
           <img className="bico" src="bottleco-icon.svg" alt="BottleCo" width="34" height="34" />
           <div className="bt"><b>BottleCo</b><span>by <a className="noelmk" href="https://noelpaliath.com/" aria-label="noel. — noelpaliath.com">noel<i>.</i></a> · 2 filling lines · sample data</span></div>
         </div>

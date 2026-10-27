@@ -634,3 +634,24 @@ body::before{content:"";position:fixed;inset:-8%;z-index:-1;pointer-events:none;
   .made img{border-radius:5px}
   .made .noelmk{display:inline-flex;align-items:center;min-height:32px}
 }
+
+/* ---- back to the product page + logo on phone (27 Oct) ---- */
+.backbtn{display:inline-flex;align-items:center;gap:4px;height:34px;padding:0 12px 0 6px;margin-right:4px;border-radius:17px;background:var(--fill);border:1px solid var(--sep);font-size:13px;font-weight:600;color:var(--label);text-decoration:none;white-space:nowrap;flex:none}
+.backbtn .ico{font-size:18px;color:var(--blue)}
+.backbtn:hover{background:var(--fill2)}
+@media (max-width:1100px){.backbtn span:not(.ico){display:none}.backbtn{width:34px;padding:0;justify-content:center;margin-right:2px}}
+@media (max-width:860px){
+  /* phone and tablet: logo row on top (back · icon · BottleCo · by noel.), clock row below */
+  .top{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .top .brand{display:flex;flex:1 1 100%;min-width:0;gap:8px}
+  .brand .bt{display:flex}
+  .brand .bt b{font-size:17px}
+  .brand .bt span{display:block;font-size:12px}
+  .brand .backbtn .ico{display:inline-flex}
+  .brand .backbtn span:not(.ico){display:none}
+  .brand .bico{width:34px;height:34px}
+  .backbtn{width:40px;height:40px;border-radius:20px}
+  .hclock{flex:1 1 100%}
+  .made{display:none}
+}
+@media (max-width:359px){.brand .bt span{display:none}}

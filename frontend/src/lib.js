@@ -42,7 +42,7 @@ export const NOT_USED = new Set(['effort']);
 
 // ---------------- API ----------------
 // Paths are relative to the page, so the app works at the site root and under a sub-path
-// (noelpaliath.com/opsagent/bottleco/). When the API is on another host, set VITE_API_BASE at build time.
+// (noelpaliath.com/opsagent/bottleco/app/). When the API is on another host, set VITE_API_BASE at build time.
 const BASE = (import.meta.env && import.meta.env.VITE_API_BASE) || '.';
 async function post(path, body, signal) {
   const r = await fetch(BASE + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal });

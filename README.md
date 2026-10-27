@@ -18,9 +18,9 @@ Code does every number. The language model only writes the words. The agents rea
 | 5 | Data Explorer (LangGraph, 3 look-around lenses) | **Done** – tests pass |
 | 6 | App (React + Vite + FastAPI, from the approved preview) | **Done** – tests pass |
 | 7 | Polish and QA | Desktop, phone, dark and light checked |
-| 8 | Publish (Cloud Run; noelpaliath.com/opsagent/bottleco) | **Live on Cloud Run** |
+| 8 | Publish (Cloud Run; app at noelpaliath.com/opsagent/bottleco/app/, product page at /opsagent/bottleco/) | **Live on Cloud Run** |
 | 9 | Bug fix list (27 Oct): phone layout, tiles, time steps, aggregates, off-topic | **Done** – tests pass |
-| 10 | Logos (27 Oct): BottleCo app icon + wordmark, "by noel." maker mark, favicon, installable app icons | **Done** – e2e pass |
+| 10 | Logos (27 Oct): BottleCo app icon + wordmark, "by noel." maker mark, favicon, installable app icons; logo row on phone; back button to the product page; app moved to /opsagent/bottleco/app/ | **Done** – e2e pass |
 
 ## Folders
 
@@ -94,3 +94,12 @@ Settings for hosting (environment variables):
 
 Brain slider: Fast = Claude Haiku 5.5, Balanced = Sonnet 5.5, Deep = Opus 5.5. Wording slider 0 = code templates (no model call).
 Put the key in `.env` (`ANTHROPIC_API_KEY=...`, never committed). Live model test: `BOTTLECO_LIVE=1 pytest -q -s -k model_wording`.
+
+## Addresses (27 Oct)
+
+| Address | What | Served by |
+|---|---|---|
+| `noelpaliath.com/opsagent/bottleco/` | Product page (what it is, film, specs, "Open the app") | Website, Cloudflare Pages (`notnotnoel/noel-sg`) |
+| `noelpaliath.com/opsagent/bottleco/app/` | The live app | Worker `deploy/cloudflare-worker.js` → Cloud Run |
+
+To switch: in Cloudflare → Workers → this Worker → Settings → Domains & Routes, change the route from `noelpaliath.com/opsagent/bottleco*` to `noelpaliath.com/opsagent/bottleco/app*`, and deploy the new `cloudflare-worker.js`. Then redeploy Cloud Run so the logo and back button go live.

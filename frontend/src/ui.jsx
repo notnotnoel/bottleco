@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { dlabel, hhmm } from './lib.js';
 
 const ICON = {
+  chevL: '<path d="M14.5 5.5L8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
   more: '<circle cx="5.5" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="18.5" cy="12" r="1.9" fill="currentColor"/>',
   play: '<path d="M8 5.5v13l11-6.5z" fill="currentColor"/>',
   pause: '<rect x="6.5" y="5" width="4" height="14" rx="1.2" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1.2" fill="currentColor"/>',
