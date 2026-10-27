@@ -613,3 +613,24 @@ body::before{content:"";position:fixed;inset:-8%;z-index:-1;pointer-events:none;
 .pop.more .mrow.sw{order:0;color:var(--label);font-size:15px}
 .mrow.sw .knob{margin-left:auto}
 .pop{background:linear-gradient(158deg,var(--sheen),transparent 36%),color-mix(in srgb,var(--solid) 96%,transparent)}
+
+/* ---- logos (27 Oct): BottleCo app icon + wordmark, "by noel." maker mark ---- */
+.brand{align-items:center;gap:10px}
+.brand .bico{width:34px;height:34px;flex:none;display:block;border-radius:9px;box-shadow:0 3px 10px rgba(0,0,0,.28)}
+.brand .bt{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.brand .bt b{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.brand .bt span{font-size:12px;color:var(--label2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.noelmk{color:var(--label);font-weight:700;letter-spacing:-.02em;text-decoration:none;border-radius:4px}
+.noelmk i{font-style:normal;color:var(--blue)}
+.noelmk:hover{text-decoration:underline;text-underline-offset:3px}
+.made{display:none}
+@media (max-width:860px){
+  /* phone and tablet: icon only in the header, maker line at the end of the page */
+  .top{grid-template-columns:auto minmax(0,1fr) auto}
+  .top .brand{display:flex}
+  .brand .bt{display:none}
+  .brand .bico{width:36px;height:36px}
+  .made{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 0 4px;font-size:12px;color:var(--label2)}
+  .made img{border-radius:5px}
+  .made .noelmk{display:inline-flex;align-items:center;min-height:32px}
+}

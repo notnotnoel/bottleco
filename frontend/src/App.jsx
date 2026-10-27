@@ -104,7 +104,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="top">
-        <div className="brand"><b>BottleCo</b><span>Bottle Co · 2 filling lines · sample data</span></div>
+        <div className="brand">
+          <img className="bico" src="bottleco-icon.svg" alt="BottleCo" width="34" height="34" />
+          <div className="bt"><b>BottleCo</b><span>by <a className="noelmk" href="https://noelpaliath.com/" aria-label="noel. — noelpaliath.com">noel<i>.</i></a> · 2 filling lines · sample data</span></div>
+        </div>
         <div className="hclock" role="timer" aria-live="off" aria-label="Current date, time and shift">
           <div className="hd"><b>{parts[1] + ' ' + parts[2]}</b><small>{'2026 · Day ' + (Math.floor(now / 1440) + 1) + ' of ' + meta.days}</small></div>
           <div className="ht tn">{parts[3]}</div>
@@ -128,6 +131,7 @@ export default function App() {
       {modal === 'W' && <Settings which="W" meta={meta} S={SW} setS={setSW} onClose={() => setModal(null)} toast={toast} />}
       {modal === 'safe' && <Safety onClose={() => setModal(null)} />}
       {toastNode}
+      <footer className="made"><img src="bottleco-icon.svg" alt="" width="20" height="20" /><span>BottleCo · a demo by <a className="noelmk" href="https://noelpaliath.com/">noel<i>.</i></a></span></footer>
     </div>
   );
 }

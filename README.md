@@ -20,6 +20,7 @@ Code does every number. The language model only writes the words. The agents rea
 | 7 | Polish and QA | Desktop, phone, dark and light checked |
 | 8 | Publish (Cloud Run; noelpaliath.com/opsagent/bottleco) | **Live on Cloud Run** |
 | 9 | Bug fix list (27 Oct): phone layout, tiles, time steps, aggregates, off-topic | **Done** – tests pass |
+| 10 | Logos (27 Oct): BottleCo app icon + wordmark, "by noel." maker mark, favicon, installable app icons | **Done** – e2e pass |
 
 ## Folders
 
