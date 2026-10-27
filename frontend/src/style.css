@@ -532,3 +532,84 @@ body::before{content:"";position:fixed;inset:-8%;z-index:-1;pointer-events:none;
   .drawer{background:linear-gradient(158deg,var(--sheen),transparent 40%),color-mix(in srgb,var(--solid) 94%,transparent)}
 }
 @media (max-width:520px){.iconbtn{flex:none}}
+
+/* ==== Bug fix list, 27 Oct ==== */
+/* thin scrollbars everywhere (Apple-style overlay feel) */
+*{scrollbar-width:thin;scrollbar-color:var(--fill2) transparent}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--fill2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--label3)}
+::-webkit-scrollbar-corner{background:transparent}
+@media (max-width:520px){::-webkit-scrollbar{width:3px;height:3px}}
+
+/* KPI tiles: the status line has a fixed box, so tiles never change height when a warning or error text comes and goes */
+.lcard .tile .w{display:block;visibility:hidden;height:14px;line-height:14px}
+.lcard .tile.alerting .w,.lcard .tile.na .w{visibility:visible}
+@media (max-width:860px){.lcard .tile .w{visibility:visible}}
+@media (max-width:520px){
+  .lcard .tile .w{white-space:normal;line-height:1.2;height:2.4em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+}
+.tile .v{height:1.15em}
+/* warning level on the sparklines: clear in both themes */
+.spk{color:var(--label2)}
+.tile.red .spk{color:var(--red)}
+.spk .lim{opacity:.85}
+
+/* time steps: press feel + a short bubble that shows the jump */
+.tb{transition:transform .18s cubic-bezier(.3,1.6,.5,1),background .2s;position:relative;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.tb:active{transform:scale(.86)}
+.tb.play:active{transform:scale(.92)}
+.tb .bump{position:absolute;left:50%;top:-4px;transform:translate(-50%,0);font-style:normal;font-size:12px;font-weight:700;color:#fff;background:var(--blue);padding:3px 8px;border-radius:10px;pointer-events:none;white-space:nowrap;
+  box-shadow:0 4px 14px rgba(10,132,255,.45);animation:bump .7s cubic-bezier(.2,.9,.3,1) forwards}
+@keyframes bump{0%{opacity:0;transform:translate(-50%,6px) scale(.7)}25%{opacity:1;transform:translate(-50%,-14px) scale(1)}100%{opacity:0;transform:translate(-50%,-30px) scale(.95)}}
+.hclock .ht.jolt{animation:jolt .45s cubic-bezier(.2,.9,.3,1)}
+@keyframes jolt{0%{color:var(--blue);transform:scale(1.06)}100%{color:inherit;transform:none}}
+@media (prefers-reduced-motion:reduce){.tb .bump,.hclock .ht.jolt{animation-duration:.01s}.tb:active{transform:none}}
+
+/* phone-only controls (speed button, More) */
+.tb.ph{display:none}
+.spgrid{display:none}
+.pop.more{width:min(300px,calc(100vw - 32px));padding:6px}
+.pop.more>div{display:flex;flex-direction:column}
+.mrow{display:flex;align-items:center;gap:12px;min-height:46px;padding:0 12px;border-radius:12px;font-size:15px;font-weight:500;color:var(--label);text-align:left;width:100%}
+.mrow:hover,.mrow:active{background:var(--fill)}
+.mrow .ico{font-size:18px;color:var(--blue);width:22px;display:flex;justify-content:center}
+.mrow.sw{cursor:pointer}
+.msep{height:1px;background:var(--sep);margin:4px 10px}
+@media (max-width:520px){
+  /* one compact row: speed · −10m · play · +10m · More */
+  .dleft,.dright2 .speedseg,.dright2>.chip,.dright2 .sw{display:none!important}
+  .tport{order:1;flex:1 1 100%;justify-content:space-between;gap:0;margin:0}
+  .tb.ph{display:flex}
+  .tb.spdb{min-width:56px;font-size:13px;font-weight:700;color:var(--blue);background:var(--blue-soft)}
+  .tb.moreb .ico{font-size:22px}
+  .tb.play{width:58px;height:58px;min-width:58px}
+  .drawer{padding:6px 12px 8px;gap:2px}
+  .scrub{height:44px}
+  .spgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 12px}
+  .spgrid button{height:40px;border-radius:12px;background:var(--fill);font-weight:700;font-size:14px;color:var(--label2)}
+  .spgrid button[aria-pressed=true]{background:var(--blue);color:#fff}
+  .pop{right:12px;left:auto}
+  /* header: trust and theme move into More */
+  .top .acts{display:none}
+  .hclock{flex:1}
+}
+
+/* RCA sheet: never wider than the screen, so the page cannot slide sideways */
+.sheet{max-width:100vw;overflow:hidden}
+.sbody{overflow-x:hidden;overscroll-behavior:contain;min-width:0}
+.sbody>*{min-width:0;max-width:100%}
+.snav{min-width:0;max-width:100%;overscroll-behavior-x:contain}
+.sbody svg{max-width:100%}
+.sbody .tbl{overflow-x:auto;max-width:100%;overscroll-behavior-x:contain}
+@media (max-width:520px){
+  html,body{overflow-x:hidden;overscroll-behavior-x:none}
+  .sbody{touch-action:pan-y}
+  .sbody .tbl{touch-action:pan-x pan-y}
+}
+.seg{max-width:100%;min-width:0}
+.seg button{min-width:0;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
+.pop.more .mrow.sw{order:0;color:var(--label);font-size:15px}
+.mrow.sw .knob{margin-left:auto}
+.pop{background:linear-gradient(158deg,var(--sheen),transparent 36%),color-mix(in srgb,var(--solid) 96%,transparent)}

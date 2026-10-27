@@ -8,6 +8,7 @@ The model never computes numbers. Everything below reads data only up to `now`.
 import re
 
 from . import kpis
+from .aggregate import Aggregator, rule_agg, wants_aggregate
 from .db import ts as iso_ts, ws
 from .fmt import START, dlabel, fixed, full, hhmm, jround, jstr, num, pct
 from .rca import HYP
@@ -16,6 +17,12 @@ from .report import fill_text, lim_text, slow_kv
 SAMPLE_Q = ['Why did Line 1 overall score drop on 10 Sep?', 'Which stop reason cost the most minutes on Line 2?', 'How many bottles were rejected yesterday?',
             'Compare shift A, B and C on both lines', 'What happened at 13:20 on 11 Sep?']
 SHIFTS = ['A', 'B', 'C']
+# Words that show a question is about the plant. A question with none of these, and no line, date or time, is off topic.
+PLANT_RX = (r'\b(lines?|l[12]|oee|score|efficien\w*|stops?|stopped|stoppages?|down ?time|faults?|jams?|breakdowns?|rejects?|rejected|defects?|scrap|'
+            r'quality|speed|slow\w*|pace|output|produc\w*|bottles?|volume|preforms?|stock|cover|material|shifts?|changeovers?|cip|clean\w*|'
+            r'deliver\w*|late|capper|cap|torque|filler|labell?er|labels?|conveyor|setpoint|plant|machines?|events?|happen\w*|running|ran|'
+            r'alerts?|warnings?|kpis?|minutes?|hours?|yesterday|today|week|underfill|particle|damaged|misfeed|blockage|micro)\b')
+OFF_TOPIC = 'That is not about Line 1 or Line 2, so it is not in the data. Ask about overall score, stops, speed, rejects, bottles made or preforms.'
 MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
 
@@ -145,7 +152,20 @@ class Explorer:
             P['range'] = [max(0, now - 59), now]
             P['label'] = 'the last hour to ' + full(now)
             P['isNow'] = True
+        if not self.on_topic(P, hist):
+            P['abstain'] = {'why': 'off_topic', 'text': OFF_TOPIC}
+            return P
         return self.finish_plan(P, now, hist)
+
+    @staticmethod
+    def on_topic(P, hist=None):
+        """True if the question names a plant word, a line, a date or a time, or is a short follow-up in a chat."""
+        q = P['q']
+        if re.search(PLANT_RX, q):
+            return True
+        if P.get('explicitLine') or P.get('measure') or P.get('range') or P.get('at') is not None or P.get('shift'):
+            return True   # (reason / defect names match parts of words, e.g. "cap" in "capital", so they do not count here)
+        return bool(hist) and len(P['raw'].split()) <= 4 and bool(re.search(r'\b(why|how|and|what about|how about|then|same|more|again)\b', q))
 
     def finish_plan(self, P, now, hist=None):
         """Checks shared by the rule reader and the model planner: no future, clip to now, chat memory."""
@@ -189,6 +209,8 @@ class Explorer:
             return 'happened'
         if re.search(r'\bshifts\b|\bby shift\b|\beach shift\b|\bcompare\b.*\bshift\b', q):  # 'this shift' is a time
             return 'shifts'
+        if wants_aggregate(q):
+            return 'aggregate'
         if re.search(r'\b(reason|reasons|type|types|kind|kinds|defect|defects|fault|faults)\b', q) and re.search(r'\b(most|top|biggest|largest|worst|main|highest|cost|which|what)\b', q) \
                 and P.get('measure') not in ('oee', 'speed'):
             return 'top'
@@ -657,6 +679,17 @@ class Explorer:
                 'trend': bt, 'trendInfo': {'name': 'Overall score', 'unit': '%', 'note': 'Hourly score with 2 hours before. Per ' + ('hour' if bt['step'] == 60 else '15 min') + '.'},
                 'lens': {'before': lt[0]['before'] if lt[0]['before'] else lt[1]['before'], 'same': lt[0]['same'], 'past': lt[0]['past']}}
 
+    def ans_aggregate(self, P, now):
+        if not P.get('agg') or not P.get('metric'):   # the model left parts out: read them from the words
+            P.update({k: v for k, v in rule_agg(P).items() if not P.get(k)})
+        r = Aggregator(self.st, self.S).run(P, now)
+        if r is None:
+            return self.abstain('I cannot work out that kind of total from the data.', now)
+        if 'mismatch' in r:
+            return self.abstain('I cannot confirm this. ' + str(r['mismatch']) + ' group value(s) did not match a second way, so I do not show the answer.', now)
+        P.update({k: r['agg'][k] for k in ('agg', 'metric', 'by', 'cond')})   # what was really computed
+        return r
+
     # ------------------------------------------------------------ dispatcher
     def answer_plan(self, P, intent, now, question):
         if P.get('abstain'):
@@ -671,6 +704,8 @@ class Explorer:
             ans = self.ans_top(P, now)
         elif intent == 'value':
             ans = self.ans_value(P, now)
+        elif intent == 'aggregate':
+            ans = self.ans_aggregate(P, now)
         else:
             ans = self.abstain('I cannot answer this from the data. Ask about overall score, stopped time, speed, rejects, bottles made or preforms left, for Line 1 or Line 2.', now)
         if ans['kind'] == 'answer':
@@ -683,6 +718,8 @@ class Explorer:
         ans['question'] = question
         ans['parsed'] = {'lines': P.get('lines'), 'measure': P.get('measure'), 'range': P.get('range'), 'label': P.get('label'), 'day': P.get('day'), 'at': P.get('at'),
                          'explicitLine': P.get('explicitLine')}
+        if intent == 'aggregate' and P.get('agg'):
+            ans['parsed'].update({k: P.get(k) for k in ('agg', 'metric', 'by', 'cond')})
         return ans
 
     def answer(self, text, now, hist=None):

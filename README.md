@@ -18,7 +18,8 @@ Code does every number. The language model only writes the words. The agents rea
 | 5 | Data Explorer (LangGraph, 3 look-around lenses) | **Done** – tests pass |
 | 6 | App (React + Vite + FastAPI, from the approved preview) | **Done** – tests pass |
 | 7 | Polish and QA | Desktop, phone, dark and light checked |
-| 8 | Publish (noelpaliath.com/opsagent/bottleco) | – |
+| 8 | Publish (Cloud Run; noelpaliath.com/opsagent/bottleco) | **Live on Cloud Run** |
+| 9 | Bug fix list (27 Oct): phone layout, tiles, time steps, aggregates, off-topic | **Done** – tests pass |
 
 ## Folders
 
@@ -55,6 +56,8 @@ cd ../backend && pip install -e ".[test]"
 uvicorn bottleco.api:app --port 8000             # open http://localhost:8000
 ```
 
+End-to-end checks (server on port 8000): `python3 frontend/e2e/smoke.py`, `python3 frontend/e2e/fixes.py`.
+
 For live development run `npx vite` in `frontend/` (it sends `/api` to port 8000).
 One container for hosting: `docker build -t bottleco .` (see `Dockerfile`).
 
@@ -82,7 +85,9 @@ Settings for hosting (environment variables):
 - **Data Explorer = preview:** 52 questions x 2 slider sets equal the preview word for word.
 - **Golden questions (30):** every number equals an independent plain-SQL result; every "why" names the known cause.
 - **Trick questions (10):** forecasts, money, energy, people, opinions, Line 3, dates outside the data, dates after "now": all get "not in the data".
-- **Claude as planner (live):** Haiku 5.5 and Sonnet 5.5 each passed all 40 (cost for 40 questions: US$0.008 and US$0.16).
+- **Claude as planner (live):** Haiku 5.5 and Sonnet 5.5 each passed all 40 (cost for 40 questions: US$0.011 and US$0.20).
+- **Totals, averages and counts:** SUM, AVG, COUNT, MIN and MAX per hour, shift, day, line or stop reason. Each group value is computed twice (code and plain SQL) and the tests check them against separate SQL. Part days, shifts or hours are left out of averages, and the answer says so.
+- **Off-topic questions:** a question that is not about the plant (for example "why is red a color") gets "not about Line 1 or Line 2", also in the middle of a chat and also when the model planner reads it wrongly.
 
 ## Models
 

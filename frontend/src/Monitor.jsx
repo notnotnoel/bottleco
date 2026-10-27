@@ -45,7 +45,7 @@ export default function Monitor({ meta, days, now, S, watch, playing, onGear, sh
               return <div key={K.key} className={cls} title={K.what}>
                 <div className="k">{K.name}</div><div className="v">{v === undefined ? '…' : fmtKpi(K.key, v, K.scale, K.unit)}</div>
                 <div className="w">{br && al ? 'Warning since ' + hhmm(al.ta) : br ? 'Checking…' : v == null ? 'Too little run time' : limOf(K, S)}</div>
-                <div style={{ color: 'var(--label2)' }}><Sparkline pts={pts} limit={S[K.lim] / K.scale} color={br ? 'var(--red)' : 'var(--blue)'} /></div>
+                <div className="spk"><Sparkline pts={pts} limit={S[K.lim] / K.scale} color={br ? 'var(--red)' : 'var(--blue)'} /></div>
               </div>;
             });
             return <div key={l} className="lcard"><div className="lhead"><b>{meta.names[l]}</b><span className={'state' + (nb ? ' stop' : '')}><i /><span>{nb ? nb + ' warning' + (nb > 1 ? 's' : '') : 'All clear'}</span></span></div><div className="tiles">{tiles}</div></div>;

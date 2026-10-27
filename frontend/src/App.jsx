@@ -98,6 +98,7 @@ export default function App() {
   const showTab = k => { setTab(k); if (window.innerWidth <= 520) setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 60); };
   const openSheet = id => { setSheetId(id); if (id != null && window.innerWidth <= 520) window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };
 
+  const cycleTheme = () => { const n = { dark: 'light', light: 'auto', auto: 'dark' }[theme], r = document.documentElement; if (n === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', n); setTheme(n); };
   if (!meta || !SE || !SW) return <div className="app"><div className="cap" style={{ padding: 24 }}>Loading BottleCo…</div></div>;
   const s = shiftOf(now), st = now - (now % 480), parts = full(now).match(/^(\w+) (\d+ \w+) (\d\d:\d\d)$/);
   return (
@@ -111,7 +112,7 @@ export default function App() {
         </div>
         <div className="acts">
           <button className="chip ok" aria-label="Why you can trust the answers" onClick={() => setModal('safe')}><Ico n="shield" /><span className="hide-s">Answers only from data</span></button>
-          <button className="iconbtn" aria-label="Appearance" title={'Appearance: ' + theme} onClick={() => { const n = { dark: 'light', light: 'auto', auto: 'dark' }[theme], r = document.documentElement; if (n === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', n); setTheme(n); }}><Ico n={theme === 'auto' ? 'auto' : theme === 'dark' ? 'moon' : 'sun'} /></button>
+          <button className="iconbtn" aria-label="Appearance" title={'Appearance: ' + theme} onClick={cycleTheme}><Ico n={theme === 'auto' ? 'auto' : theme === 'dark' ? 'moon' : 'sun'} /></button>
         </div>
       </header>
       <Floor meta={meta} days={days} clock={clock} settingsRef={swRef} theme={theme} />
@@ -121,7 +122,7 @@ export default function App() {
         <Explorer now={now} S={SE} incidents={watch.incidents} onGear={() => setModal('E')} show={tab === 'chat'} />
         <Monitor meta={meta} days={days} now={now} S={SW} watch={watch} playing={playing} onGear={() => setModal('W')} sheetId={sheetId} setSheetId={openSheet} show={tab === 'watch'} />
       </main>
-      <Drawer meta={meta} now={now} t={clock.current.t} playing={playing} rate={rate} incidents={allInc} watchInc={watch.incidents}
+      <Drawer meta={meta} now={now} t={clock.current.t} clock={clock} playing={playing} theme={theme} onTheme={cycleTheme} onSafety={() => setModal('safe')} rate={rate} incidents={allInc} watchInc={watch.incidents}
         pauseOnAlert={pauseOnAlert} setPauseOnAlert={setPauseOnAlert} onToggle={toggle} onSeek={seek} onRate={changeRate} toast={toast} />
       {modal === 'E' && <Settings which="E" meta={meta} S={SE} setS={setSE} onClose={() => setModal(null)} toast={toast} />}
       {modal === 'W' && <Settings which="W" meta={meta} S={SW} setS={setSW} onClose={() => setModal(null)} toast={toast} />}

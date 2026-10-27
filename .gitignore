@@ -7,3 +7,4 @@ node_modules/
 .env
 frontend/dist/
 frontend/node_modules/
+frontend/e2e/*.png

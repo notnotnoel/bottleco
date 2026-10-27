@@ -37,13 +37,22 @@ def ask(ex, c):
     return ex.answer(c['q'], now, hist)
 
 
+# "hello" now gets the off-topic answer (the preview gave a general "cannot answer" text).
+from bottleco.explorer_engine import OFF_TOPIC  # noqa: E402
+CHANGED = {'X09': OFF_TOPIC}
+
+
 @pytest.mark.parametrize('case', ['defaults', 'full'])
 def test_answers_equal_preview(store, oracle, case):
     o = oracle[case]
     ex = explorer(store, o['settings'])
     cases = {c['id']: c for c in Q['golden'] + Q['trick'] + Q['extra']}
     for x in o['answers']:
-        same(x['ans'], ask(ex, cases[x['id']]), '%s.%s' % (case, x['id']))
+        a = ask(ex, cases[x['id']])
+        if x['id'] in CHANGED:   # intended change since the preview (bug fix list, 27 Oct)
+            assert a['kind'] == 'abstain' and a['text'] == CHANGED[x['id']], (x['id'], a['text'])
+            continue
+        same(x['ans'], a, '%s.%s' % (case, x['id']))
 
 
 # ---------------- golden questions: independent plain SQL ----------------

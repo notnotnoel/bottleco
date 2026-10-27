@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { dlabel, hhmm } from './lib.js';
 
 const ICON = {
+  more: '<circle cx="5.5" cy="12" r="1.9" fill="currentColor"/><circle cx="12" cy="12" r="1.9" fill="currentColor"/><circle cx="18.5" cy="12" r="1.9" fill="currentColor"/>',
   play: '<path d="M8 5.5v13l11-6.5z" fill="currentColor"/>',
   pause: '<rect x="6.5" y="5" width="4" height="14" rx="1.2" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1.2" fill="currentColor"/>',
   back: '<path d="M12 6v12L3.5 12zM21 6v12l-8.5-6z" fill="currentColor"/>',
@@ -52,14 +53,14 @@ export function useToast() {
 // ---------------- charts ----------------
 export function Sparkline({ pts, limit, color }) {
   const W = 120, H = 26, p = pts.filter(x => x[1] != null);
-  if (p.length < 2) return <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true" />;
-  const xs = p.map(a => a[0]), ys = p.map(a => a[1]).concat(limit != null ? [limit] : []);
+  if (p.length < 2) return <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">{limit != null && isFinite(limit) && <line className="lim" x1={0} x2={W} y1={H / 2} y2={H / 2} stroke="currentColor" strokeOpacity={.9} strokeDasharray="4 3" strokeWidth={1.2} vectorEffect="non-scaling-stroke" />}</svg>;
+  const xs = p.map(a => a[0]), ys = p.map(a => a[1]).concat(limit != null && isFinite(limit) ? [limit] : []);
   let y0 = Math.min(...ys), y1 = Math.max(...ys); if (y1 - y0 < 1e-9) { y0 -= 1; y1 += 1; }
   const pad = (y1 - y0) * .12; y0 -= pad; y1 += pad;
   const X = x => (x - xs[0]) / (xs[xs.length - 1] - xs[0] || 1) * W, Y = y => H - 2 - (y - y0) / (y1 - y0) * (H - 4), l = p[p.length - 1], c = color || 'var(--blue)';
   return (
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
-      {limit != null && <line x1={0} x2={W} y1={Y(limit)} y2={Y(limit)} stroke="currentColor" strokeOpacity={.35} strokeDasharray="3 3" strokeWidth={1} vectorEffect="non-scaling-stroke" />}
+      {limit != null && isFinite(limit) && <line className="lim" x1={0} x2={W} y1={Y(limit)} y2={Y(limit)} stroke="currentColor" strokeOpacity={.9} strokeDasharray="4 3" strokeWidth={1.2} vectorEffect="non-scaling-stroke"><title>Warning level</title></line>}
       <polyline points={p.map(a => X(a[0]).toFixed(1) + ',' + Y(a[1]).toFixed(1)).join(' ')} fill="none" stroke={c} strokeWidth={1.7} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
       <circle cx={X(l[0])} cy={Y(l[1])} r={2.2} fill={c} />
     </svg>
