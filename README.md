@@ -70,6 +70,7 @@ Settings for hosting (environment variables):
 | `BOTTLECO_DAILY_USD` | Daily spend cap. When reached, the app keeps working without the model. | 2.0 |
 | `BOTTLECO_ASK_LIMIT` | Questions per visitor per 10 minutes. | 30 |
 | `BOTTLECO_ORIGINS` | Allowed page origins if the page is hosted apart, e.g. `https://noelpaliath.com`. | – |
+| `BOTTLECO_PROXY_SECRET` | Shared secret with the Worker (`PROXY_SECRET` in `deploy/cloudflare-worker.js`). When set, a direct call to the Cloud Run URL (skipping the Worker, and so skipping the rate limit and spend cap) gets a 404. Leave unset for local development. | – |
 
 ## What the tests prove
 

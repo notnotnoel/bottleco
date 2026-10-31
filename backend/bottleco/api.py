@@ -37,6 +37,7 @@ from .wording import reword
 
 DAILY_USD = float(os.environ.get('BOTTLECO_DAILY_USD', '2.0'))
 ASK_PER_10_MIN = int(os.environ.get('BOTTLECO_ASK_LIMIT', '30'))
+PROXY_SECRET = os.environ.get('BOTTLECO_PROXY_SECRET', '')   # set together with the Worker's PROXY_SECRET; blocks calls straight to Cloud Run
 
 app = FastAPI(title='BottleCo API', version='0.6.0')
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -44,6 +45,17 @@ _origins = [o for o in os.environ.get('BOTTLECO_ORIGINS', '').split(',') if o]  
 if _origins:
     from fastapi.middleware.cors import CORSMiddleware
     app.add_middleware(CORSMiddleware, allow_origins=_origins, allow_methods=['GET', 'POST'], allow_headers=['content-type'])
+
+
+@app.middleware('http')
+async def require_proxy_secret(request: Request, call_next):
+    """When set, only requests carrying the Worker's secret reach the API — a direct hit on the Cloud Run URL gets a 404.
+    Leaves the built React app (mounted below, outside /api) reachable either way, so the site itself still loads."""
+    if PROXY_SECRET and request.url.path.startswith('/api/') and request.headers.get('x-bottleco-proxy-secret') != PROXY_SECRET:
+        return JSONResponse({'detail': 'Not found.'}, status_code=404)
+    return await call_next(request)
+
+
 STORE = Store()
 _lock = threading.Lock()
 
