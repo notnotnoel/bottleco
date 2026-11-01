@@ -184,7 +184,8 @@ def meta():
             'ideal': STORE.ideal, 'bay': [L.bay for L in STORE.L], 'faults': STORE.fault_names, 'planned': STORE.planned_names,
             'defects': STORE.defect_names, 'shifts': ['A', 'B', 'C'], 'sliders': slider_list(),
             'kpis': [{'key': k[0], 'name': k[1], 'what': k[2], 'dir': k[3], 'lim': k[4], 'scale': k[5], 'unit': k[6]} for k in kpis.KPIS],
-            'plain': kpis.PLAIN, 'moments': story, 'samples': SAMPLE_Q, 'models': llm.MODELS}
+            'plain': kpis.PLAIN, 'moments': story, 'samples': SAMPLE_Q, 'models': llm.MODELS,
+            'tracing': tracing.enabled()}
 
 
 @app.get('/api/day/{c}')
@@ -243,7 +244,10 @@ def report(body: ReportBody):
         raise HTTPException(404, 'no such report at this time')
     key = (body.id, now)
     if key in c.reports:
-        return c.reports[key]
+        hit = dict(c.reports[key])
+        hit['trace'] = {'agent': 'Line Watcher', 'title': 'RCA %d report' % body.id, 'cached': True, 'ms': 0, 'usd': 0,
+                        'steps': [{'step': 'Opened report', 'how': 'already worked out', 'ms': 0}], 'langsmith': False}
+        return hit
     with tracing.step('Line Watcher RCA', inputs={'incident': body.id, 'now_minute': now, 'line': inc['line']},
                       brain=c.S.get('brain'), wording=c.S.get('wording'), version=tracing.APP_VERSION) as top:
         out = _report(c, inc, now)
@@ -256,12 +260,19 @@ def report(body: ReportBody):
 
 
 def _report(c, inc, now):
+    steps, t = [], time.time()
     with tracing.step('investigate', inputs={'incident': inc['id']}) as o:
         rep = report_for(c.eng, inc, now)
         o.update({'cause': rep.get('causeName') or rep.get('cause'), 'facts': len(rep.get('facts') or [])})
+    cause = rep.get('causeName') if rep.get('cause') else None
+    steps.append({'step': 'Tested causes', 'how': ('found: ' + cause) if cause else 'cause not clear', 'ms': _ms(time.time() - t)})
+    t = time.time()
     with tracing.step('analyse + triangulate') as o:
         an, tri = analysis_for(c.eng, rep), triangulate(c.eng, rep)
         o.update({'analysis_items': len(an) if hasattr(an, '__len__') else None})
+    nf = len(rep.get('facts') or [])
+    steps.append({'step': 'Checked from 3 angles', 'how': '%d number%s, each checked twice' % (nf, '' if nf == 1 else 's'), 'ms': _ms(time.time() - t)})
+    t = time.time()
     st, l, o = STORE, rep['line'], 1 - rep['line']
     scale = 100 if rep['key'] in ('oee', 'speed', 'rej') else 1
     x0, x1 = max(60, rep['on'] - 240), min(now, max(rep['ta'], inc['end']) + 180)
@@ -287,6 +298,12 @@ def _report(c, inc, now):
             if text and info['mode'] == 'model':
                 rep['model_text'] = text
             o.update({'mode': info.get('mode'), 'usd': meter.usd})
+            rep['wording_usd'] = round(meter.usd, 6)
+    w = rep.get('wording') or {}
+    steps.append({'step': 'Wrote report', 'how': (BRAIN_NAME[int(c.S.get('brain', 1))] + ' re-worded, numbers kept') if w.get('mode') == 'model' else 'code text',
+                  'ms': _ms(time.time() - t)})
+    rep['trace'] = {'agent': 'Line Watcher', 'title': 'RCA %d report' % inc['id'], 'steps': steps, 'ms': sum(x['ms'] for x in steps),
+                    'usd': rep.get('wording_usd', 0), 'langsmith': tracing.enabled()}
     return clean(rep)
 
 
@@ -307,13 +324,54 @@ def _run_ask(body, request):
     S, note = _ask_settings(c, ip)
     q = (body.question or '')[:400]
     chat = [x for x in body.chat if isinstance(x, dict) and 'q' in x and 'parsed' in x][-30:]
-    out = explorer_agent.build(c.eng, S, use_model=note is None).invoke({'question': q, 'now': now, 'chat': chat},
-                                                                         config=tracing.config('Data Explorer', now, S, model_on=note is None))
+    graph, out, steps = explorer_agent.build(c.eng, S, use_model=note is None), {}, []
+    for node, val, sec in _stream_graph(graph, {'question': q, 'now': now, 'chat': chat}, tracing.config('Data Explorer', now, S, model_on=note is None)):
+        out.update(val)
+        steps.append((node, sec))
     tracing.flush()
     SPEND.add(out.get('usage', {}).get('usd', 0))
     ans = out['answer']
     ans['usage'], ans['planner'], ans['note'] = out.get('usage'), out.get('planner'), note
+    ans['trace'] = explorer_trace(steps, out, S)
     return clean(ans)
+
+
+BRAIN_NAME = ['Claude Haiku 5.5', 'Claude Sonnet 5.5', 'Claude Opus 5.5']
+
+
+def _ms(x):
+    return int(round(x * 1000))
+
+
+def explorer_trace(steps, final, S):
+    """The agent's steps in plain words, for the trace log in the app. steps = [(node, seconds)]."""
+    ans, P = final.get('answer') or {}, final.get('P') or {}
+    who = BRAIN_NAME[int(S.get('brain', 1))] if final.get('planner') == 'model' else 'rules'
+    abst = ans.get('kind') == 'abstain'
+    n = len(ans.get('facts') or [])
+    why = {'off_topic': 'not about the plant', 'future': 'asks for a forecast', 'missing': 'not in the data', 'opinion': 'asks for an opinion',
+           'outside': 'date outside the data', 'after': 'after the time bar', 'unknown': 'no such line'}.get((P.get('abstain') or {}).get('why'), 'not in the data')
+    words = {
+        'plan': ('Read question', who),
+        'check': ('Checked plan', why if (P.get('abstain') or abst) else 'OK'),
+        'answer': ('Worked out answer', 'no answer, I do not guess' if abst
+                   else '%d number%s, each checked twice' % (n, '' if n == 1 else 's') if n else 'done'),
+        'write': ('Wrote answer', ((ans.get('wording') or {}).get('mode') == 'model' and BRAIN_NAME[int(S.get('brain', 1))] + ' re-worded, numbers kept') or 'code text'),
+    }
+    out = [{'step': words[k][0], 'how': words[k][1], 'ms': _ms(sec)} for k, sec in steps if k in words]
+    u = final.get('usage') or {}
+    return {'agent': 'Data Explorer', 'steps': out, 'ms': sum(x['ms'] for x in out), 'usd': u.get('usd', 0),
+            'tokens': (u.get('input_tokens', 0) or 0) + (u.get('output_tokens', 0) or 0), 'langsmith': tracing.enabled()}
+
+
+def _stream_graph(graph, inputs, config):
+    """Run the graph node by node. Yields (node, state update, seconds the node took)."""
+    t = time.time()
+    for upd in graph.stream(inputs, stream_mode='updates', config=config):
+        for node, val in upd.items():
+            now_t = time.time()
+            yield node, val or {}, now_t - t
+            t = now_t
 
 
 @app.post('/api/ask')
@@ -339,17 +397,18 @@ def ask_stream(body: AskBody, request: Request):
         try:
             graph = explorer_agent.build(c.eng, S, use_model=note is None)
             yield 'event: step\ndata: %s\n\n' % json.dumps({'node': 'start', 'text': STEP_TEXT['plan']})
-            final = {}
-            for upd in graph.stream({'question': q, 'now': now, 'chat': chat}, stream_mode='updates',
-                                    config=tracing.config('Data Explorer', now, S, model_on=note is None, streamed=True)):
-                for node, val in upd.items():
-                    final.update(val or {})
-                    nxt = {'plan': 'check', 'check': 'answer', 'answer': 'write'}.get(node)
-                    if nxt:
-                        yield 'event: step\ndata: %s\n\n' % json.dumps({'node': nxt, 'text': STEP_TEXT[nxt]})
+            final, steps = {}, []
+            for node, val, sec in _stream_graph(graph, {'question': q, 'now': now, 'chat': chat},
+                                                tracing.config('Data Explorer', now, S, model_on=note is None, streamed=True)):
+                final.update(val)
+                steps.append((node, sec))
+                nxt = {'plan': 'check', 'check': 'answer', 'answer': 'write'}.get(node)
+                if nxt:
+                    yield 'event: step\ndata: %s\n\n' % json.dumps({'node': nxt, 'text': STEP_TEXT[nxt]})
             SPEND.add((final.get('usage') or {}).get('usd', 0))
             ans = final['answer']
             ans['usage'], ans['planner'], ans['note'] = final.get('usage'), final.get('planner'), note
+            ans['trace'] = explorer_trace(steps, final, S)
             tracing.flush()
             yield 'event: answer\ndata: %s\n\n' % json.dumps(clean(ans))
         except Exception as e:  # never leave the client waiting

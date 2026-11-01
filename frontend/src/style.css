@@ -658,3 +658,52 @@ body::before{content:"";position:fixed;inset:-8%;z-index:-1;pointer-events:none;
 /* answers: direct answer first (semibold), then how I got it (secondary) */
 .bub .lead{font-weight:600;color:var(--label)}
 .bub .lead+.expl{margin-top:6px;padding-top:6px;border-top:.5px solid var(--sep);color:var(--label2);font-size:.94em}
+
+/* ---- agent trace log (1 Nov): button top right, panel below it; full-width sheet on phone ---- */
+.tracebtn{position:relative;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px 0 10px;border-radius:17px;background:var(--fill);border:1px solid var(--sep);font-size:13px;font-weight:600;color:var(--label);flex:none;transition:background .2s,transform .15s}
+.tracebtn .ico{font-size:17px;color:var(--blue)}
+.tracebtn:hover,.tracebtn.on{background:var(--fill2)}
+.tracebtn:active{transform:scale(.94)}
+.tracebtn .badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--blue);color:#fff;font-size:11px;font-weight:700;font-style:normal;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--bg)}
+.tracep{position:fixed;z-index:60;top:calc(max(10px,var(--sat,0px)) + 52px);right:max(16px,env(safe-area-inset-right,0px));width:min(400px,calc(100vw - 32px));max-height:min(72vh,640px);display:flex;flex-direction:column;
+  background:linear-gradient(158deg,var(--sheen),transparent 36%),color-mix(in srgb,var(--solid) 97%,transparent);-webkit-backdrop-filter:saturate(180%) blur(28px);backdrop-filter:saturate(180%) blur(28px);
+  border:.5px solid var(--sep);border-radius:20px;box-shadow:var(--shadow-lg);animation:rise .22s cubic-bezier(.2,.9,.3,1);overflow:hidden}
+.tph{display:flex;align-items:center;gap:8px;padding:12px 10px 4px 16px}
+.tph>div{flex:1;min-width:0}.tph b{display:block;font-size:16px;font-weight:700;letter-spacing:-.01em}.tph span{display:block;font-size:12px;color:var(--label2)}
+.tph .iconbtn{width:32px;height:32px}
+.tclear{height:30px;padding:0 12px;border-radius:15px;background:var(--fill);font-size:12.5px;font-weight:600;color:var(--label2)}
+.tsub{margin:0;padding:2px 16px 10px;font-size:12.5px;color:var(--label2);border-bottom:.5px solid var(--sep)}
+.tlist{list-style:none;margin:0;padding:6px 10px 12px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:8px}
+.te{padding:10px 12px;border-radius:14px;background:var(--card);border:1px solid var(--sep)}
+.te .th{display:flex;align-items:center;gap:7px;font-size:12px}.te .th b{font-size:12.5px}.te .th span{margin-left:auto;color:var(--label2);white-space:nowrap}
+.te .dot{width:8px;height:8px;border-radius:4px;flex:none}.te .dot.e{background:var(--blue)}.te .dot.w{background:var(--orange)}
+.te .tt{margin:4px 0 6px;font-size:13.5px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.te .ts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.te .ts li{display:flex;gap:7px;align-items:baseline;font-size:12.5px;color:var(--label2);line-height:1.3}
+.te .ts li>span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere}.te .ts b{color:var(--label);font-weight:600}
+.te .ts small{display:block;font-size:12px}
+.te .ts .ok{flex:none;width:14px;text-align:center;color:var(--green);font-weight:700}.te.warn .ts .ok{color:var(--orange)}
+.te .ts em{flex:none;font-style:normal;font-variant-numeric:tabular-nums;color:var(--label2)}
+.te .tf{margin-top:7px;padding-top:6px;border-top:.5px solid var(--sep);font-size:11.5px;color:var(--label2)}
+.tempty{padding:28px 18px;text-align:center;color:var(--label2);font-size:13.5px}
+@media (max-width:860px){
+  .top .brand{flex:1 1 0}
+  .top .acts{order:1}
+  .hclock{order:2}
+  .tracebtn{height:40px;border-radius:20px;padding:0 12px}
+}
+@media (max-width:520px){
+  /* trust and theme live in More on phone; the trace button stays top right */
+  .top .acts{display:flex}.top .acts>:not(.tracebtn):not(.tracep){display:none}
+}
+@media (max-width:520px){
+  .tracebtn{width:40px;padding:0;justify-content:center}.tracebtn .ico{font-size:19px}.tracebtn .hide-s{display:none}
+  .tracep{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));width:auto;top:calc(max(10px,var(--sat,0px)) + 56px);max-height:calc(100dvh - max(10px,var(--sat,0px)) - 72px)}
+}
+
+/* ---- phone status bar area (island): content starts below it, and the band behind it is filled, not black (1 Nov) ---- */
+:root{--sat:env(safe-area-inset-top,0px)}
+.app{padding-top:max(10px,var(--sat))}
+.app::before{content:"";position:fixed;inset:0 0 auto 0;height:var(--sat);z-index:55;pointer-events:none;
+  background:color-mix(in srgb,var(--bg) 40%,transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+html{background:var(--bg)}

@@ -108,6 +108,8 @@ What you see in LangSmith:
 - **Line Watcher RCA**: one trace per RCA report opened. Steps: `investigate → analyse + triangulate → write`.
 - Tags `bottleco`; metadata: app version, time-bar minute, brain and wording sliders.
 
+In the app, the **Trace** button (top right) shows the same steps for this session in plain words, with time and cost, whether LangSmith is on or not.
+
 Each request sends its trace before it ends (Cloud Run only gives CPU during a request), for at most 2 seconds. If LangSmith is slow or down, the answer still comes back; only that trace is lost. Tests: `backend/tests/test_tracing.py` (a local stand-in server checks the run names arrive).
 
 ## Models

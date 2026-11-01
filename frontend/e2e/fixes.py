@@ -3,7 +3,8 @@
 2. KPI tiles keep one height while time moves (warnings come and go).
 3. Every sparkline has its dashed warning line.
 4. Phone: one-row time bar with a More menu; the page never scrolls sideways; the RCA sheet fits the screen.
-5. Data Explorer: the answer leads with the direct answer, the chat snaps to its start; an aggregate question gets an aggregate answer; an off-topic question after a real one gets "not about Line 1 or Line 2".
+5. Agent trace log (top right) lists each run in plain words, fits the phone.
+6. Data Explorer: the answer leads with the direct answer, the chat snaps to its start; an aggregate question gets an aggregate answer; an off-topic question after a real one gets "not about Line 1 or Line 2".
 """
 import sys
 
@@ -53,6 +54,13 @@ with sync_playwright() as p:
     check(a4.startswith('The incident with the highest impact was RCA'), 'direct answer first: ' + a4[:70])
     gap = pg.evaluate("(()=>{const b=document.querySelector('.chat'), q=[...b.querySelectorAll('[data-q]')].pop(); return q.getBoundingClientRect().top-b.getBoundingClientRect().top})()")
     check(0 <= gap <= 20, 'chat snaps to the start of the answer (gap %d px)' % gap)
+    pg.click('.tracebtn'); pg.wait_for_timeout(300)
+    entries = pg.locator('.tracep .te').count()
+    first = pg.locator('.tracep .te').first.inner_text()
+    check(entries >= 5 and 'Read question' in first and 'Wrote answer' in first, 'trace log lists each run and its steps (%d entries)' % entries)
+    pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
+    check(pg.locator('.tracep').count() == 0, 'trace panel closes with Esc')
+    pg.evaluate("document.documentElement.setAttribute('data-theme','light')"); pg.click('button[aria-label="Appearance"]'); pg.wait_for_timeout(300)
 
     ph = b.new_page(viewport={'width': 390, 'height': 844}, device_scale_factor=2, has_touch=True, is_mobile=True)
     ph.goto(U); ph.wait_for_selector('.lcard', state='attached'); ph.evaluate(f'window.__bottleco.seek({T(10, 9, 0)})'); ph.wait_for_timeout(1500)
@@ -65,6 +73,10 @@ with sync_playwright() as p:
     check(ph.locator('.pop.more .mrow').count() == 6, 'More menu has 6 rows')
     ph.locator('.pop.more .mrow', has_text='Next warning').tap(); ph.wait_for_timeout(500)
     check(ph.locator('.ht').inner_text() != '09:10', 'Next warning from More moves the clock')
+    ph.tap('.tracebtn'); ph.wait_for_timeout(300)
+    bb = ph.locator('.tracep').bounding_box()
+    check(bb['x'] >= 8 and bb['x'] + bb['width'] <= 390 - 8 and ph.evaluate('document.documentElement.scrollWidth') <= 390, 'trace panel fits the phone screen')
+    ph.tap('.tracebtn'); ph.wait_for_timeout(200)
     ph.tap('nav.tabs button:nth-child(2)'); ph.wait_for_timeout(400); ph.locator('.rpill').first.tap(); ph.wait_for_selector('.sheet .blk'); ph.wait_for_timeout(800)
     sw = ph.evaluate("[document.querySelector('.sheet .sbody').scrollWidth, document.querySelector('.sheet .sbody').clientWidth, document.documentElement.scrollWidth, innerWidth]")
     check(sw[0] <= sw[1] and sw[2] <= sw[3], 'RCA sheet fits the phone screen %s' % sw)

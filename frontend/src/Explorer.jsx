@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, dlabel, dt, fmtN, full, hhmm } from './lib.js';
 import { FactText, Ico, LensView, MiniTable, Modal, TrendChart, trendWords } from './ui.jsx';
+import { pushTrace } from './Trace.jsx';
 
 function FactModal({ f, onClose }) {
   const fm = v => Math.abs(v) >= 100 ? Math.round(v).toLocaleString('en-US') : (Math.round(v * 100) / 100).toString();
@@ -60,6 +61,7 @@ export default function Explorer({ now, S, incidents, onGear, show }) {
     const keep = Math.max(2, Math.round(S.memory));
     const ans = await api.askStream({ question: q, now: at, settings: S, chat: chat.current.slice(-keep) }, setStep);
     ans.at_now = at;
+    if (ans.trace) pushTrace({ kind: 'explorer', at, q, trace: ans.trace });
     if (ans.parsed) { chat.current.push({ q, parsed: ans.parsed }); if (chat.current.length > keep) chat.current.splice(0, chat.current.length - keep); }
     setLog(l => [...l, { ans }]); setStep(''); setBusy(false);
   }

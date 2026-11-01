@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, fmtKpi, full, hhmm } from './lib.js';
+import { pushTrace } from './Trace.jsx';
 import { FactText, Ico, LensView, MiniTable, Modal, Sparkline, TrendChart, trendWords } from './ui.jsx';
 
 const WIN = { oee: 60, stop: 60, speed: 15, rej: 30, cover: 30 };
@@ -82,10 +83,10 @@ const Chk = ({ c }) => <div className="chk"><b className={c.skipped ? 's' : c.ok
 
 function Sheet({ id, meta, days, now, S, onClose }) {
   const [rep, setRep] = useState(null), [err, setErr] = useState(null), [big, setBig] = useState(false), [rows, setRows] = useState(null), body = useRef(null), el = useRef(null);
-  const tick = useRef(0);
+  const tick = useRef(0), logged = useRef(null);   // log each report once per opening, not on every clock tick
   useEffect(() => { // fetch the report for this moment (throttled while the clock runs)
     const ctl = new AbortController(), wait = Date.now() - tick.current > 600 ? 0 : 600;
-    const t = setTimeout(() => { tick.current = Date.now(); api.report(S, now, id, ctl.signal).then(r => { setRep(r); setErr(null); }).catch(e => { if (e.name !== 'AbortError') setErr(e.message); }); }, wait);
+    const t = setTimeout(() => { tick.current = Date.now(); api.report(S, now, id, ctl.signal).then(r => { setRep(r); setErr(null); if (r.trace && logged.current !== id) { logged.current = id; pushTrace({ kind: 'rca', at: now, trace: r.trace }); } }).catch(e => { if (e.name !== 'AbortError') setErr(e.message); }); }, wait);
     return () => { clearTimeout(t); ctl.abort(); };
   }, [id, now, S]);
   useEffect(() => { if (body.current) body.current.scrollTop = 0; }, [id]);

@@ -5,6 +5,7 @@ import Drawer, { SPEEDS, near } from './Drawer.jsx';
 import Explorer from './Explorer.jsx';
 import Floor from './Floor.jsx';
 import Monitor from './Monitor.jsx';
+import Trace, { pushTrace } from './Trace.jsx';
 import { NOT_USED, SHIFTS, SLIDER_FMT, api, full, hhmm, makeDays, shiftOf } from './lib.js';
 import { Ico, Modal, useToast } from './ui.jsx';
 
@@ -31,12 +32,13 @@ function Settings({ which, meta, S, setS, onClose, toast }) {
     })}</div></div>)}
   </Modal>;
 }
-function Safety({ onClose }) {
+function Safety({ onClose, langsmith }) {
   const items = [['Code computes every number.', 'The language model only reads your question and, if you ask for it, writes the words around the numbers.'],
     ['Every number can be checked.', 'Tap a blue number to see where it came from. A second code path computes it again. If the two differ, I say "I cannot confirm this".'],
     ['"Not in the data" is a valid answer.', 'Costs, energy, forecasts and opinions are not in the data. I say so, and I do not guess.'],
     ['A cause needs proof.', 'I name a cause only when enough checks pass. Otherwise I say "the cause is not clear".'],
     ['No peeking at the future.', 'I read only data up to the time bar. Move the bar back, and my answers change.'],
+    ['Every step is traced.', 'Tap Trace (top right) to see each step the agents took in this session: what they did, how long it took and what it cost.' + (langsmith ? ' Each run is also saved in LangSmith for review.' : '')],
     ['I can only read.', 'The data is read-only. I cannot change it.']];
   return <Modal title="Why you can trust the answers" onClose={onClose}><ol className="safe">{items.map(([a, b]) => <li key={a}><b>{a + ' '}</b>{b}</li>)}</ol></Modal>;
 }
@@ -52,7 +54,12 @@ export default function App() {
   const swRef = useRef(null); swRef.current = SW;
 
   useEffect(() => { api.meta().then(m => { setMeta(m); const d = defaults(m); setSE(d); setSW({ ...d }); const t0 = (3 - 1) * 1440 + 7 * 60 + 30 - 360; clock.current.t = t0; setNow(t0); }); }, []);
-  useEffect(() => { const r = document.documentElement; if (theme === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', theme); }, [theme]);
+  useEffect(() => {
+    const r = document.documentElement; if (theme === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', theme);
+    // phone status bar colour = the page ground of the theme in use (a light page never gets a black strip)
+    const set = () => { const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', getComputedStyle(r).getPropertyValue('--bg').trim() || '#04050B'); };
+    set(); const mq = window.matchMedia('(prefers-color-scheme: light)'); mq.addEventListener('change', set); return () => mq.removeEventListener('change', set);
+  }, [theme]);
   useEffect(() => { if (SW) api.scan(SW).then(r => setAllInc(r.incidents)); }, [SW]);
   // load the minute data around now (and the day before, for 6-hour sparklines)
   useEffect(() => { const c = Math.floor(now / 1440); days.ensure(c); days.ensure(c - 1); days.ensure(c + 1); }, [now, days]);
@@ -63,6 +70,14 @@ export default function App() {
     return () => { clearTimeout(id); ctl.abort(); };
   }, [SW, now, meta, playing]);
 
+  // Line Watcher: log each new warning once (several at once after a jump = one entry)
+  const warnSeen = useRef(new Set());
+  useEffect(() => {
+    const fresh = (watch.incidents || []).filter(i => !warnSeen.current.has(i.id));
+    if (!fresh.length) return;
+    fresh.forEach(i => warnSeen.current.add(i.id));
+    pushTrace({ kind: 'warn', at: Math.max(...fresh.map(i => i.start)), items: fresh.sort((a, b) => a.start - b.start) });
+  }, [watch.incidents]);
   const seek = useCallback(m => { if (!meta) return; clock.current.t = Math.max(0, Math.min(meta.N - 1, m)); setNow(clock.current.now()); }, [meta]);
   const toggle = useCallback(on => { const p = on == null ? !clock.current.playing : on; if (p && meta && clock.current.t >= meta.N - 2) clock.current.t = 0; clock.current.playing = p; setPlaying(p); }, [meta]);
   const changeRate = r => { clock.current.rate = r; setRate(r); };
@@ -120,6 +135,7 @@ export default function App() {
         <div className="acts">
           <button className="chip ok" aria-label="Why you can trust the answers" onClick={() => setModal('safe')}><Ico n="shield" /><span className="hide-s">Answers only from data</span></button>
           <button className="iconbtn" aria-label="Appearance" title={'Appearance: ' + theme} onClick={cycleTheme}><Ico n={theme === 'auto' ? 'auto' : theme === 'dark' ? 'moon' : 'sun'} /></button>
+          <Trace langsmith={meta.tracing} />
         </div>
       </header>
       <Floor meta={meta} days={days} clock={clock} settingsRef={swRef} theme={theme} />
@@ -133,7 +149,7 @@ export default function App() {
         pauseOnAlert={pauseOnAlert} setPauseOnAlert={setPauseOnAlert} onToggle={toggle} onSeek={seek} onRate={changeRate} toast={toast} />
       {modal === 'E' && <Settings which="E" meta={meta} S={SE} setS={setSE} onClose={() => setModal(null)} toast={toast} />}
       {modal === 'W' && <Settings which="W" meta={meta} S={SW} setS={setSW} onClose={() => setModal(null)} toast={toast} />}
-      {modal === 'safe' && <Safety onClose={() => setModal(null)} />}
+      {modal === 'safe' && <Safety langsmith={meta.tracing} onClose={() => setModal(null)} />}
       {toastNode}
       <footer className="made"><img src="bottleco-icon.svg" alt="" width="20" height="20" /><span>BottleCo · a demo by <a className="noelmk" href="https://noelpaliath.com/">noel<i>.</i></a></span></footer>
     </div>

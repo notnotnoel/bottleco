@@ -24,7 +24,7 @@ try:
 except Exception:  # langsmith missing: tracing is simply off
     _ls_trace, _enabled = None, (lambda: False)
 
-APP_VERSION = '0.7.2'
+APP_VERSION = '0.7.3'
 
 
 def enabled():
