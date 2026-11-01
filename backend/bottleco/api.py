@@ -300,7 +300,7 @@ def _report(c, inc, now):
             o.update({'mode': info.get('mode'), 'usd': meter.usd})
             rep['wording_usd'] = round(meter.usd, 6)
     w = rep.get('wording') or {}
-    steps.append({'step': 'Wrote report', 'how': (BRAIN_NAME[int(c.S.get('brain', 1))] + ' re-worded, numbers kept') if w.get('mode') == 'model' else 'code text',
+    steps.append({'step': 'Wrote report', 'how': (BRAIN_NAME[int(c.S.get('brain', 1))] + ' re-worded, numbers kept') if w.get('mode') == 'model' else ('code text (wording slider at 0)' if int(c.S.get('wording', 0)) == 0 else 'code text'),
                   'ms': _ms(time.time() - t)})
     rep['trace'] = {'agent': 'Line Watcher', 'title': 'RCA %d report' % inc['id'], 'steps': steps, 'ms': sum(x['ms'] for x in steps),
                     'usd': rep.get('wording_usd', 0), 'langsmith': tracing.enabled()}
@@ -356,7 +356,8 @@ def explorer_trace(steps, final, S):
         'check': ('Checked plan', why if (P.get('abstain') or abst) else 'OK'),
         'answer': ('Worked out answer', 'no answer, I do not guess' if abst
                    else '%d number%s, each checked twice' % (n, '' if n == 1 else 's') if n else 'done'),
-        'write': ('Wrote answer', ((ans.get('wording') or {}).get('mode') == 'model' and BRAIN_NAME[int(S.get('brain', 1))] + ' re-worded, numbers kept') or 'code text'),
+        'write': ('Wrote answer', (BRAIN_NAME[int(S.get('brain', 1))] + ' re-worded, numbers kept') if (ans.get('wording') or {}).get('mode') == 'model'
+                  else ('code text (wording slider at 0)' if int(S.get('wording', 0)) == 0 else 'code text')),
     }
     out = [{'step': words[k][0], 'how': words[k][1], 'ms': _ms(sec)} for k, sec in steps if k in words]
     u = final.get('usage') or {}

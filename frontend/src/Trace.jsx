@@ -8,7 +8,7 @@ import { Ico } from './ui.jsx';
 export const pushTrace = e => window.dispatchEvent(new CustomEvent('bottleco:trace', { detail: { ...e, wall: Date.now(), id: Math.random().toString(36).slice(2) } }));
 
 const dur = ms => ms == null ? '' : ms < 1000 ? Math.max(1, Math.round(ms)) + ' ms' : (ms / 1000).toFixed(1) + ' s';
-const usd = v => !v ? 'no AI cost' : 'US$' + (v < 0.01 ? v.toFixed(4) : v.toFixed(3));
+const usd = v => !v ? 'code only, no AI cost' : 'AI cost US$' + (v < 0.0001 ? '0.0001' : v < 0.01 ? v.toFixed(4) : v.toFixed(3));
 
 function Entry({ e }) {
   if (e.kind === 'warn') return <li className="te warn">
@@ -44,7 +44,7 @@ export default function Trace({ langsmith }) {
       <div className="tph"><div><b>Agent trace</b><span>This session · newest first</span></div>
         {log.length > 0 && <button className="tclear" onClick={() => { setLog([]); setSeen(0); }}>Clear</button>}
         <button className="iconbtn" aria-label="Close" onClick={() => setOpen(false)}><Ico n="x" /></button></div>
-      <p className="tsub">Each step the agents took, how long it took and what it cost.{langsmith ? ' Each run is also saved in LangSmith.' : ''}</p>
+      <p className="tsub">Each step the agents took, how long it took and what it cost. Claude is paid only when it reads a question or re-words text; rules and code are free.{langsmith ? ' Each run is also saved in LangSmith.' : ''}</p>
       {log.length ? <ol className="tlist">{log.map(e => <Entry key={e.id} e={e} />)}</ol>
         : <div className="tempty">Nothing yet. Ask a question, open an RCA report or press play.</div>}
     </div>}

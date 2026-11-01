@@ -705,5 +705,5 @@ body::before{content:"";position:fixed;inset:-8%;z-index:-1;pointer-events:none;
 :root{--sat:env(safe-area-inset-top,0px)}
 .app{padding-top:max(10px,var(--sat))}
 .app::before{content:"";position:fixed;inset:0 0 auto 0;height:var(--sat);z-index:55;pointer-events:none;
-  background:color-mix(in srgb,var(--bg) 40%,transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);-webkit-mask-image:linear-gradient(to bottom,black 60%,transparent);mask-image:linear-gradient(to bottom,black 60%,transparent)}   /* blur only, no tint: invisible at rest */
 html{background:var(--bg)}
