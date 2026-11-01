@@ -99,4 +99,5 @@ def build(store, settings=None, engine=None):
 
 def run(store, now, settings=None, seen=None, engine=None) -> Any:
     graph = build(store, settings, engine)
-    return graph.invoke({'now': now, 'seen': seen or [], 'reports': [], 'held': []})
+    from . import tracing
+    return graph.invoke({'now': now, 'seen': seen or [], 'reports': [], 'held': []}, config=tracing.config('Line Watcher', now, settings))

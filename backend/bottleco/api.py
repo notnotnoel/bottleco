@@ -24,6 +24,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from . import tracing
 from . import explorer as explorer_agent
 from . import kpis, llm
 from .alerts import scan
@@ -243,8 +244,24 @@ def report(body: ReportBody):
     key = (body.id, now)
     if key in c.reports:
         return c.reports[key]
-    rep = report_for(c.eng, inc, now)
-    an, tri = analysis_for(c.eng, rep), triangulate(c.eng, rep)
+    with tracing.step('Line Watcher RCA', inputs={'incident': body.id, 'now_minute': now, 'line': inc['line']},
+                      brain=c.S.get('brain'), wording=c.S.get('wording'), version=tracing.APP_VERSION) as top:
+        out = _report(c, inc, now)
+        top.update({'title': out.get('title'), 'cause': out.get('causeName') or out.get('cause'), 'checks_ok': (out.get('check') or {}).get('ok')})
+    c.reports[key] = out
+    if len(c.reports) > 400:
+        c.reports.clear()
+    tracing.flush()
+    return out
+
+
+def _report(c, inc, now):
+    with tracing.step('investigate', inputs={'incident': inc['id']}) as o:
+        rep = report_for(c.eng, inc, now)
+        o.update({'cause': rep.get('causeName') or rep.get('cause'), 'facts': len(rep.get('facts') or [])})
+    with tracing.step('analyse + triangulate') as o:
+        an, tri = analysis_for(c.eng, rep), triangulate(c.eng, rep)
+        o.update({'analysis_items': len(an) if hasattr(an, '__len__') else None})
     st, l, o = STORE, rep['line'], 1 - rep['line']
     scale = 100 if rep['key'] in ('oee', 'speed', 'rej') else 1
     x0, x1 = max(60, rep['on'] - 240), min(now, max(rep['ta'], inc['end']) + 180)
@@ -262,17 +279,15 @@ def report(body: ReportBody):
     rep['lead_text'] = fill_text(rep['lead'], rep['facts'])
     rep['lens'] = {'before': rep['lens']['before'], 'same': rep['lens']['same'], 'past': c.eng.past_text(rep['lens']['past'])}
     if c.S['wording'] > 0 and model_allowed(c.S):
-        meter = llm.Meter()
-        text, info = reword('\n'.join([rep['lead_text'], rep['causeLine'], ' '.join(rep['evidence'])]), c.S, meter)
-        SPEND.add(meter.usd)
-        rep['wording'] = info
-        if text and info['mode'] == 'model':
-            rep['model_text'] = text
-    out = clean(rep)
-    c.reports[key] = out
-    if len(c.reports) > 400:
-        c.reports.clear()
-    return out
+        with tracing.step('write (Claude re-words, number check)') as o:
+            meter = llm.Meter()
+            text, info = reword('\n'.join([rep['lead_text'], rep['causeLine'], ' '.join(rep['evidence'])]), c.S, meter)
+            SPEND.add(meter.usd)
+            rep['wording'] = info
+            if text and info['mode'] == 'model':
+                rep['model_text'] = text
+            o.update({'mode': info.get('mode'), 'usd': meter.usd})
+    return clean(rep)
 
 
 def _ask_settings(c, ip):
@@ -292,7 +307,9 @@ def _run_ask(body, request):
     S, note = _ask_settings(c, ip)
     q = (body.question or '')[:400]
     chat = [x for x in body.chat if isinstance(x, dict) and 'q' in x and 'parsed' in x][-30:]
-    out = explorer_agent.build(c.eng, S, use_model=note is None).invoke({'question': q, 'now': now, 'chat': chat})
+    out = explorer_agent.build(c.eng, S, use_model=note is None).invoke({'question': q, 'now': now, 'chat': chat},
+                                                                         config=tracing.config('Data Explorer', now, S, model_on=note is None))
+    tracing.flush()
     SPEND.add(out.get('usage', {}).get('usd', 0))
     ans = out['answer']
     ans['usage'], ans['planner'], ans['note'] = out.get('usage'), out.get('planner'), note
@@ -323,7 +340,8 @@ def ask_stream(body: AskBody, request: Request):
             graph = explorer_agent.build(c.eng, S, use_model=note is None)
             yield 'event: step\ndata: %s\n\n' % json.dumps({'node': 'start', 'text': STEP_TEXT['plan']})
             final = {}
-            for upd in graph.stream({'question': q, 'now': now, 'chat': chat}, stream_mode='updates'):
+            for upd in graph.stream({'question': q, 'now': now, 'chat': chat}, stream_mode='updates',
+                                    config=tracing.config('Data Explorer', now, S, model_on=note is None, streamed=True)):
                 for node, val in upd.items():
                     final.update(val or {})
                     nxt = {'plan': 'check', 'check': 'answer', 'answer': 'write'}.get(node)
@@ -332,6 +350,7 @@ def ask_stream(body: AskBody, request: Request):
             SPEND.add((final.get('usage') or {}).get('usd', 0))
             ans = final['answer']
             ans['usage'], ans['planner'], ans['note'] = final.get('usage'), final.get('planner'), note
+            tracing.flush()
             yield 'event: answer\ndata: %s\n\n' % json.dumps(clean(ans))
         except Exception as e:  # never leave the client waiting
             yield 'event: error\ndata: %s\n\n' % json.dumps({'text': 'I could not work this out (%s).' % type(e).__name__})

@@ -92,6 +92,24 @@ Settings for hosting (environment variables):
 - **Answer the question asked:** each answer leads with the direct answer, then how I got it, then the data. "Which incident had the highest impact?" ranks the warning incidents by bottles lost; "which stop was longest?" ranks stops; "which line / day had the most ...?" names the line or day; "which operator ...?" says "I do not know which operator". Checked against plain SQL, also when the model planner misreads the question.
 - **Off-topic questions:** a question that is not about the plant (for example "why is red a color") gets "not about Line 1 or Line 2", also in the middle of a chat and also when the model planner reads it wrongly.
 
+## Tracing with LangSmith (optional)
+
+Off by default. The app works the same with it on or off. To turn it on, set these on the server (Cloud Run → Edit & deploy new revision → Variables & Secrets):
+
+| Variable | Value |
+|---|---|
+| `LANGSMITH_TRACING` | `true` |
+| `LANGSMITH_API_KEY` | key from smith.langchain.com (put it in Secret Manager, like the Claude key) |
+| `LANGSMITH_PROJECT` | `bottleco` |
+| `LANGSMITH_TRACING_SAMPLING_RATE` | optional, e.g. `0.2` to keep 1 run in 5 |
+
+What you see in LangSmith:
+- **Data Explorer**: one trace per question. Steps: the LangGraph nodes `plan → check → answer → write`, with each Claude call inside (tokens, time, cost).
+- **Line Watcher RCA**: one trace per RCA report opened. Steps: `investigate → analyse + triangulate → write`.
+- Tags `bottleco`; metadata: app version, time-bar minute, brain and wording sliders.
+
+Each request sends its trace before it ends (Cloud Run only gives CPU during a request), for at most 2 seconds. If LangSmith is slow or down, the answer still comes back; only that trace is lost. Tests: `backend/tests/test_tracing.py` (a local stand-in server checks the run names arrive).
+
 ## Models
 
 Brain slider: Fast = Claude Haiku 5.5, Balanced = Sonnet 5.5, Deep = Opus 5.5. Wording slider 0 = code templates (no model call).
